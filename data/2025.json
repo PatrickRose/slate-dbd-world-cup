@@ -4,6 +4,13 @@
   "advancePerGroup": 2,
   "bestThirdPlace": 2,
   "killers": [
+    { "id": "houndmaster", "name": "Houndmaster", "avatar": "/avatars/houndmaster.png" },
+    { "id": "skullmerchant", "name": "Skull Merchant", "avatar": "/avatars/skullmerchant.png" },
+    { "id": "xenomorph", "name": "Xenomorph", "avatar": "/avatars/xenomorph.png" },
+    { "id": "blight", "name": "Blight", "avatar": "/avatars/blight.png" },
+    { "id": "twins", "name": "Twins", "avatar": "/avatars/twins.png" },
+    { "id": "plague", "name": "Plague", "avatar": "/avatars/plague.png" },
+
     { "id": "trickster", "name": "Trickster", "avatar": "/avatars/trickster.webp" },
     { "id": "ghostie", "name": "Ghostie", "avatar": "/avatars/ghostie.webp" },
     { "id": "executioner", "name": "Executioner", "avatar": "/avatars/executioner.webp" },
@@ -35,9 +42,22 @@
     { "id": "nurse", "name": "Nurse", "avatar": "/avatars/nurse.webp" },
     { "id": "pig", "name": "Pig", "avatar": "/avatars/pig.webp" },
     { "id": "oni", "name": "Oni", "avatar": "/avatars/oni.webp" },
-    { "id": "lich", "name": "Lich", "avatar": "/avatars/lich.webp" }
+    { "id": "lich", "name": "Lich", "avatar": "/avatars/lich.webp" },
+    { "id": "onryo", "name": "Onryo", "avatar": "/avatars/onryo.png" },
+    { "id": "first", "name": "First", "avatar": "/avatars/first.png" },
+
+    { "id": "billy", "name": "Billy", "avatar": "/avatars/billy.png" },
+    { "id": "myers", "name": "Myers", "avatar": "/avatars/myers.png" },
+    { "id": "legion", "name": "Legion", "avatar": "/avatars/legion.png" },
+    { "id": "demogorgon", "name": "Demogorgon", "avatar": "/avatars/demogorgon.png" },
+    { "id": "artist", "name": "Artist", "avatar": "/avatars/artist.png" },
+    { "id": "cannibal", "name": "Cannibal", "avatar": "/avatars/cannibal.png" }
   ],
   "groups": [
+    {
+      "name": "Group A",
+      "killers": ["houndmaster", "skullmerchant", "xenomorph", "blight", "twins", "plague"]
+    },
     {
       "name": "Group B",
       "killers": ["trickster", "ghostie", "executioner", "wraith", "clown", "hag"]
@@ -56,7 +76,11 @@
     },
     {
       "name": "Group F",
-      "killers": ["nurse", "pig", "oni", "lich"]
+      "killers": ["nurse", "pig", "oni", "lich", "onryo", "first"]
+    },
+    {
+      "name": "Group G",
+      "killers": ["billy", "myers", "legion", "demogorgon", "artist", "cannibal"]
     }
   ],
   "results": [
