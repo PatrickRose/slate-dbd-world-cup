@@ -1,5 +1,16 @@
-import type { Fixture, GroupView } from "@/lib/tournament";
+import type {
+  Fixture,
+  GroupView,
+  QualificationStatus,
+} from "@/lib/tournament";
 import { KillerChip } from "./KillerChip";
+
+/** Row background tint by qualification status. */
+const STATUS_ROW: Record<QualificationStatus, string> = {
+  through: "bg-green-100/70 dark:bg-green-500/15",
+  eliminated: "bg-red-100/70 dark:bg-red-500/10",
+  contention: "",
+};
 
 function Score({ fixture }: { fixture: Fixture }) {
   const { result } = fixture;
@@ -110,7 +121,7 @@ export function GroupCard({ group }: { group: GroupView }) {
           {group.standings.map((row, i) => (
             <tr
               key={row.killer.id}
-              className="border-b border-black/5 last:border-0 dark:border-white/5"
+              className={`border-b border-black/5 last:border-0 dark:border-white/5 ${STATUS_ROW[row.status]}`}
             >
               <td className="py-2 pl-5 pr-2">
                 <div className="flex items-center gap-2">

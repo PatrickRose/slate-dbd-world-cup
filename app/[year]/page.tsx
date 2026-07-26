@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
   buildGroupViews,
+  buildKnockout,
   getTournament,
   getYears,
 } from "@/lib/tournament";
 import { GroupCard } from "@/components/GroupCard";
+import { Bracket } from "@/components/Bracket";
 import { YearSwitcher } from "@/components/YearSwitcher";
 
 export function generateStaticParams() {
@@ -29,6 +31,7 @@ export default async function YearPage(props: PageProps<"/[year]">) {
   if (!tournament) notFound();
 
   const groups = buildGroupViews(tournament);
+  const knockout = buildKnockout(tournament);
   const years = getYears();
 
   return (
@@ -49,11 +52,25 @@ export default async function YearPage(props: PageProps<"/[year]">) {
         <YearSwitcher years={years} current={tournament.year} />
       </header>
 
+      <div className="mb-5 flex flex-wrap items-center gap-4 text-xs text-zinc-500">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block size-3 rounded-sm bg-green-200 dark:bg-green-500/30" />
+          Through
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block size-3 rounded-sm bg-red-200 dark:bg-red-500/25" />
+          Eliminated
+        </span>
+        <span>Status is only shown once it&apos;s mathematically decided.</span>
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {groups.map((group) => (
           <GroupCard key={group.name} group={group} />
         ))}
       </div>
+
+      <Bracket rounds={knockout} />
     </main>
   );
 }
