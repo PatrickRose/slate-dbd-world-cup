@@ -1,0 +1,84 @@
+{
+  "year": 2025,
+  "title": "Slate DBD Killer World Cup 2025",
+  "killers": [
+    { "id": "trickster", "name": "Trickster" },
+    { "id": "ghostie", "name": "Ghostie" },
+    { "id": "executioner", "name": "Executioner" },
+    { "id": "wraith", "name": "Wraith" },
+    { "id": "clown", "name": "Clown" },
+    { "id": "hag", "name": "Hag" },
+
+    { "id": "spirit", "name": "Spirit" },
+    { "id": "knight", "name": "Knight" },
+    { "id": "jason", "name": "Jason" },
+    { "id": "dredge", "name": "Dredge" },
+    { "id": "slinger", "name": "Slinger" },
+    { "id": "trapper", "name": "Trapper" },
+
+    { "id": "krasue", "name": "Krasue" },
+    { "id": "cenobite", "name": "Cenobite" },
+    { "id": "ghoul", "name": "Ghoul" },
+    { "id": "huntress", "name": "Huntress" },
+    { "id": "chucky", "name": "Chucky" },
+    { "id": "singularity", "name": "Singularity" },
+
+    { "id": "freddy", "name": "Freddy" },
+    { "id": "mastermind", "name": "Mastermind" },
+    { "id": "unknown", "name": "Unknown" },
+    { "id": "darklord", "name": "Dark Lord" },
+    { "id": "nemesis", "name": "Nemesis" },
+    { "id": "doctor", "name": "Doctor" },
+
+    { "id": "nurse", "name": "Nurse" },
+    { "id": "pig", "name": "Pig" },
+    { "id": "oni", "name": "Oni" },
+    { "id": "lich", "name": "Lich" }
+  ],
+  "groups": [
+    {
+      "name": "Group B",
+      "killers": ["trickster", "ghostie", "executioner", "wraith", "clown", "hag"]
+    },
+    {
+      "name": "Group C",
+      "killers": ["spirit", "knight", "jason", "dredge", "slinger", "trapper"]
+    },
+    {
+      "name": "Group D",
+      "killers": ["krasue", "cenobite", "ghoul", "huntress", "chucky", "singularity"]
+    },
+    {
+      "name": "Group E",
+      "killers": ["freddy", "mastermind", "unknown", "darklord", "nemesis", "doctor"]
+    },
+    {
+      "name": "Group F",
+      "killers": ["nurse", "pig", "oni", "lich"]
+    }
+  ],
+  "results": [
+    {
+      "group": "Group B",
+      "a": "trickster",
+      "b": "clown",
+      "aHooks": 12,
+      "bHooks": 8,
+      "video": "https://youtu.be/dQw4w9WgXcQ?t=30"
+    },
+    {
+      "group": "Group B",
+      "a": "executioner",
+      "b": "hag",
+      "aHooks": 12,
+      "bHooks": 6
+    },
+    {
+      "group": "Group B",
+      "a": "ghostie",
+      "b": "wraith",
+      "aHooks": 12,
+      "bHooks": 11
+    }
+  ]
+}
