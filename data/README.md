@@ -85,10 +85,17 @@ and set the killer's `avatar` to its path (`/avatars/trickster.png`). Without on
 a coloured initials badge is shown instead. Avatars appear enlarged on hover over
 a killer anywhere in the tables and match list.
 
+The bundled avatars are the killers' official character portraits
+(`K## The<Name> Portrait`), pulled from the Dead by Daylight Wiki
+([fandom](https://deadbydaylight.fandom.com) / [wiki.gg](https://deadbydaylight.wiki.gg))
+and stored 200×200 in `public/avatars/`. They're game art © Behaviour Interactive,
+used here for a non-commercial fan tracker. Swap in your own files any time.
+
 ## About the seed `2025.json`
 
-Groups B–F and their killers were transcribed from Slate's spreadsheet. Group F
-still needs its last two killers, and **Group A** needs adding.
+All seven groups (A–G) and their killers were transcribed from Slate's
+spreadsheet — 42 killers across the groups. That's every current Dead by
+Daylight killer except **The Animatronic**, which sits out the tournament.
 
 The **match scores and the knockout bracket are placeholder examples** so the
 through/eliminated colouring, the YouTube links and the bracket are all visible —

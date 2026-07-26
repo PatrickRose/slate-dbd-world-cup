@@ -4,40 +4,60 @@
   "advancePerGroup": 2,
   "bestThirdPlace": 2,
   "killers": [
-    { "id": "trickster", "name": "Trickster" },
-    { "id": "ghostie", "name": "Ghostie" },
-    { "id": "executioner", "name": "Executioner" },
-    { "id": "wraith", "name": "Wraith" },
-    { "id": "clown", "name": "Clown" },
-    { "id": "hag", "name": "Hag" },
+    { "id": "houndmaster", "name": "Houndmaster", "avatar": "/avatars/houndmaster.png" },
+    { "id": "skullmerchant", "name": "Skull Merchant", "avatar": "/avatars/skullmerchant.png" },
+    { "id": "xenomorph", "name": "Xenomorph", "avatar": "/avatars/xenomorph.png" },
+    { "id": "blight", "name": "Blight", "avatar": "/avatars/blight.png" },
+    { "id": "twins", "name": "Twins", "avatar": "/avatars/twins.png" },
+    { "id": "plague", "name": "Plague", "avatar": "/avatars/plague.png" },
 
-    { "id": "spirit", "name": "Spirit" },
-    { "id": "knight", "name": "Knight" },
-    { "id": "jason", "name": "Jason" },
-    { "id": "dredge", "name": "Dredge" },
-    { "id": "slinger", "name": "Slinger" },
-    { "id": "trapper", "name": "Trapper" },
+    { "id": "trickster", "name": "Trickster", "avatar": "/avatars/trickster.webp" },
+    { "id": "ghostie", "name": "Ghostie", "avatar": "/avatars/ghostie.webp" },
+    { "id": "executioner", "name": "Executioner", "avatar": "/avatars/executioner.webp" },
+    { "id": "wraith", "name": "Wraith", "avatar": "/avatars/wraith.webp" },
+    { "id": "clown", "name": "Clown", "avatar": "/avatars/clown.webp" },
+    { "id": "hag", "name": "Hag", "avatar": "/avatars/hag.webp" },
 
-    { "id": "krasue", "name": "Krasue" },
-    { "id": "cenobite", "name": "Cenobite" },
-    { "id": "ghoul", "name": "Ghoul" },
-    { "id": "huntress", "name": "Huntress" },
-    { "id": "chucky", "name": "Chucky" },
-    { "id": "singularity", "name": "Singularity" },
+    { "id": "spirit", "name": "Spirit", "avatar": "/avatars/spirit.webp" },
+    { "id": "knight", "name": "Knight", "avatar": "/avatars/knight.webp" },
+    { "id": "jason", "name": "Jason", "avatar": "/avatars/jason.png" },
+    { "id": "dredge", "name": "Dredge", "avatar": "/avatars/dredge.webp" },
+    { "id": "slinger", "name": "Slinger", "avatar": "/avatars/slinger.webp" },
+    { "id": "trapper", "name": "Trapper", "avatar": "/avatars/trapper.webp" },
 
-    { "id": "freddy", "name": "Freddy" },
-    { "id": "mastermind", "name": "Mastermind" },
-    { "id": "unknown", "name": "Unknown" },
-    { "id": "darklord", "name": "Dark Lord" },
-    { "id": "nemesis", "name": "Nemesis" },
-    { "id": "doctor", "name": "Doctor" },
+    { "id": "krasue", "name": "Krasue", "avatar": "/avatars/krasue.webp" },
+    { "id": "cenobite", "name": "Cenobite", "avatar": "/avatars/cenobite.webp" },
+    { "id": "ghoul", "name": "Ghoul", "avatar": "/avatars/ghoul.webp" },
+    { "id": "huntress", "name": "Huntress", "avatar": "/avatars/huntress.webp" },
+    { "id": "chucky", "name": "Chucky", "avatar": "/avatars/chucky.webp" },
+    { "id": "singularity", "name": "Singularity", "avatar": "/avatars/singularity.webp" },
 
-    { "id": "nurse", "name": "Nurse" },
-    { "id": "pig", "name": "Pig" },
-    { "id": "oni", "name": "Oni" },
-    { "id": "lich", "name": "Lich" }
+    { "id": "freddy", "name": "Freddy", "avatar": "/avatars/freddy.webp" },
+    { "id": "mastermind", "name": "Mastermind", "avatar": "/avatars/mastermind.webp" },
+    { "id": "unknown", "name": "Unknown", "avatar": "/avatars/unknown.webp" },
+    { "id": "darklord", "name": "Dark Lord", "avatar": "/avatars/darklord.webp" },
+    { "id": "nemesis", "name": "Nemesis", "avatar": "/avatars/nemesis.webp" },
+    { "id": "doctor", "name": "Doctor", "avatar": "/avatars/doctor.webp" },
+
+    { "id": "nurse", "name": "Nurse", "avatar": "/avatars/nurse.webp" },
+    { "id": "pig", "name": "Pig", "avatar": "/avatars/pig.webp" },
+    { "id": "oni", "name": "Oni", "avatar": "/avatars/oni.webp" },
+    { "id": "lich", "name": "Lich", "avatar": "/avatars/lich.webp" },
+    { "id": "onryo", "name": "Onryo", "avatar": "/avatars/onryo.png" },
+    { "id": "first", "name": "First", "avatar": "/avatars/first.png" },
+
+    { "id": "billy", "name": "Billy", "avatar": "/avatars/billy.png" },
+    { "id": "myers", "name": "Myers", "avatar": "/avatars/myers.png" },
+    { "id": "legion", "name": "Legion", "avatar": "/avatars/legion.png" },
+    { "id": "demogorgon", "name": "Demogorgon", "avatar": "/avatars/demogorgon.png" },
+    { "id": "artist", "name": "Artist", "avatar": "/avatars/artist.png" },
+    { "id": "cannibal", "name": "Cannibal", "avatar": "/avatars/cannibal.png" }
   ],
   "groups": [
+    {
+      "name": "Group A",
+      "killers": ["houndmaster", "skullmerchant", "xenomorph", "blight", "twins", "plague"]
+    },
     {
       "name": "Group B",
       "killers": ["trickster", "ghostie", "executioner", "wraith", "clown", "hag"]
@@ -56,7 +76,11 @@
     },
     {
       "name": "Group F",
-      "killers": ["nurse", "pig", "oni", "lich"]
+      "killers": ["nurse", "pig", "oni", "lich", "onryo", "first"]
+    },
+    {
+      "name": "Group G",
+      "killers": ["billy", "myers", "legion", "demogorgon", "artist", "cannibal"]
     }
   ],
   "results": [
