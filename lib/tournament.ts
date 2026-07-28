@@ -66,7 +66,12 @@ export interface KnockoutRound {
 }
 
 export interface Tournament {
+  /**
+   * Taken from the data file's name, not its contents — `2026.json` is the 2026
+   * tournament, so renaming the file moves the edition. See `getTournament`.
+   */
   year: number;
+  /** Heading for the year, defaulting to `Slate DBD Killer World Cup <year>`. */
   title: string;
   /** How many killers advance directly from each group. Defaults to 2. */
   advancePerGroup?: number;
@@ -82,6 +87,13 @@ export interface Tournament {
   /** Optional single-elimination bracket after the group stage. */
   knockout?: KnockoutRound[];
 }
+
+/**
+ * A data file as authored on disk: everything except `year` and `title`, which
+ * are both derived from the filename. Naming the file is all it takes to start
+ * a new edition.
+ */
+export type TournamentFile = Omit<Tournament, "year" | "title">;
 
 // ---------------------------------------------------------------------------
 // Derived / view models
@@ -168,7 +180,11 @@ export function getLatestYear(): number | undefined {
 export function getTournament(year: number): Tournament | undefined {
   const file = path.join(DATA_DIR, `${year}.json`);
   if (!fs.existsSync(file)) return undefined;
-  return JSON.parse(fs.readFileSync(file, "utf8")) as Tournament;
+  const data = JSON.parse(fs.readFileSync(file, "utf8")) as TournamentFile;
+  // The filename is the only place the year lives — `getYears`, the route param
+  // and `generateStaticParams` all read it from there, so deriving the year and
+  // the heading here keeps every one of them in agreement after a rename.
+  return { ...data, year, title: `Slate DBD Killer World Cup ${year}` };
 }
 
 // ---------------------------------------------------------------------------

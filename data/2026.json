@@ -1,6 +1,4 @@
 {
-  "year": 2025,
-  "title": "Slate DBD Killer World Cup 2025",
   "advancePerGroup": 2,
   "bestThirdPlace": 2,
   "killers": [
@@ -84,43 +82,34 @@
     }
   ],
   "results": [
-    { "group": "Group B", "a": "trickster", "b": "ghostie", "aHooks": 10, "bHooks": 8 },
-    { "group": "Group B", "a": "executioner", "b": "trickster", "aHooks": 11, "bHooks": 9 },
-    { "group": "Group B", "a": "trickster", "b": "wraith", "aHooks": 12, "bHooks": 7 },
-    { "group": "Group B", "a": "trickster", "b": "clown", "aHooks": 12, "bHooks": 8, "video": "https://youtu.be/dQw4w9WgXcQ?t=30" },
-    { "group": "Group B", "a": "trickster", "b": "hag", "aHooks": 9, "bHooks": 9 },
-    { "group": "Group B", "a": "executioner", "b": "ghostie", "aHooks": 10, "bHooks": 8 },
-    { "group": "Group B", "a": "ghostie", "b": "wraith", "aHooks": 12, "bHooks": 11 },
-    { "group": "Group B", "a": "ghostie", "b": "clown", "aHooks": 11, "bHooks": 7 },
-    { "group": "Group B", "a": "ghostie", "b": "hag", "aHooks": 10, "bHooks": 6 },
-    { "group": "Group B", "a": "executioner", "b": "wraith", "aHooks": 12, "bHooks": 9 },
-    { "group": "Group B", "a": "executioner", "b": "clown", "aHooks": 10, "bHooks": 7 },
-    { "group": "Group B", "a": "executioner", "b": "hag", "aHooks": 12, "bHooks": 6 },
-    { "group": "Group B", "a": "wraith", "b": "clown", "aHooks": 9, "bHooks": 8 },
-    { "group": "Group B", "a": "wraith", "b": "hag", "aHooks": 10, "bHooks": 7 },
-    { "group": "Group B", "a": "clown", "b": "hag", "aHooks": 9, "bHooks": 6 }
+    { "group": "Group A", "a": "houndmaster", "b": "skullmerchant", "aHooks": 12, "bHooks": 4, "video": "https://www.youtube.com/watch?v=0Rfj_ul_1Ko&t=882s" },
+    { "group": "Group A", "a": "xenomorph", "b": "blight", "aHooks": 7, "bHooks": 4, "video": "https://youtu.be/0Rfj_ul_1Ko?si=oRR2vudlN2sIWkdq&t=1644" },
+    { "group": "Group A", "a": "twins", "b": "plague", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/0Rfj_ul_1Ko?si=tEk4g6jNyOG6YAk2&t=3063" },
+    { "group": "Group B", "a": "trickster", "b": "clown", "aHooks": 12, "bHooks": 8, "video": "https://youtu.be/0Rfj_ul_1Ko?si=NWMroKrFF6hqcNgQ&t=4567" },
+    { "group": "Group B", "a": "ghostie", "b": "wraith", "aHooks": 12, "bHooks": 11, "video": "https://youtu.be/0Rfj_ul_1Ko?si=yaW7k0ry1PD6G87g&t=5815" },
+    { "group": "Group B", "a": "executioner", "b": "hag", "aHooks": 12, "bHooks": 6, "video": "https://youtu.be/0Rfj_ul_1Ko?si=mqRcLC88jW13mzHm&t=7265" }
   ],
   "knockout": [
     {
       "name": "Quarter-finals",
       "matches": [
-        { "a": "executioner", "b": "doctor", "aHooks": 12, "bHooks": 8 },
-        { "a": "chucky", "b": "trickster", "aHooks": 11, "bHooks": 9 },
-        { "a": "spirit", "b": "krasue", "aHooks": 10, "bHooks": 12 },
-        { "a": "nemesis", "b": "ghostie", "aHooks": 7, "bHooks": 10 }
+        {},
+        {},
+        {},
+        {}
       ]
     },
     {
       "name": "Semi-finals",
       "matches": [
-        { "a": "executioner", "b": "chucky", "aHooks": 10, "bHooks": 11 },
-        { "a": "krasue", "b": "ghostie", "aHooks": 12, "bHooks": 9 }
+        {},
+        {}
       ]
     },
     {
       "name": "Final",
       "matches": [
-        { "a": "chucky", "b": "krasue", "aHooks": 12, "bHooks": 10 }
+        {}
       ]
     }
   ]

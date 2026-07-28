@@ -18,6 +18,13 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Entering results
+
+Tournaments live in `data/<year>.json` — see [`data/README.md`](data/README.md).
+With the dev server running, each year also has a local-only score editor at
+`/<year>/edit` that writes that JSON for you; it isn't part of the deployed
+site.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More

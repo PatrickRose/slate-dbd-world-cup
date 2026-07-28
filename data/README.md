@@ -4,12 +4,16 @@ Each edition of the tournament is one JSON file named after its year, e.g.
 `2025.json`. Add a new file to add a new year — it shows up automatically in the
 year switcher, newest first. No database, no code changes needed.
 
+**The filename is what sets the year.** Renaming `2026.json` to `2027.json` moves
+the tournament to 2027 — URL, year switcher and heading all follow. The file
+itself holds no year and no title: the heading is generated as
+`Slate DBD Killer World Cup <year>`, so a rename is the whole job.
+
 ## File shape
 
 ```jsonc
 {
-  "year": 2025,
-  "title": "Slate DBD Killer World Cup 2025",
+  // No "year" or "title" — both come from the filename.
 
   // How many killers advance directly from each group. Defaults to 2.
   "advancePerGroup": 2,
@@ -78,6 +82,40 @@ Computed automatically from `results`:
   it's decided, the row stays neutral. Qualification = top `advancePerGroup` per
   group plus the best `bestThirdPlace` third-placed killers overall.
 
+## Entering results without editing JSON by hand
+
+Run the site locally and every year gets an editor at `/<year>/edit`:
+
+```bash
+npm run dev
+# then open http://localhost:3000/2026/edit
+# (or use the dashed "Edit scores (local only)" link on the year page)
+```
+
+It lists every group fixture with two hook boxes and a video link, plus a
+knockout section where you pick who filled each bracket slot. Hitting **Save**
+rewrites `data/<year>.json` in place, so review it with `git diff` and commit it
+like any other change.
+
+- Leave both hook boxes empty for a match that hasn't been played — clearing a
+  score again deletes that result and the match goes back to being an upcoming
+  fixture.
+- A video link needs a score alongside it, and both hook boxes must be filled or
+  both empty. The editor refuses to save and lists what to fix rather than
+  writing a half-entered match.
+- Only `results` and `knockout` scores/slots are written. The killer list, the
+  groups, the bracket shape and its `aLabel` / `bLabel` placeholders stay
+  hand-authored here — as does creating the file for a brand new year.
+- Everything the editor doesn't own keeps its exact formatting, so diffs stay
+  small. The first save does normalise `results` into fixture order, with each
+  match written in the same killer order the tables use.
+
+**The editor is local-only and never reaches the deployed site.** Its page file
+is `app/[year]/edit/page.dev.tsx`, and `next.config.ts` only registers the
+`dev.tsx` extension as a page outside production builds — so `next build`
+produces no `/[year]/edit` route, no editor JavaScript and no link to it. The
+save action also refuses to run if `NODE_ENV` is `production`.
+
 ## Avatars
 
 Optional. Drop an image in `public/avatars/` (e.g. `public/avatars/trickster.png`)
@@ -91,14 +129,11 @@ The bundled avatars are the killers' official character portraits
 and stored 200×200 in `public/avatars/`. They're game art © Behaviour Interactive,
 used here for a non-commercial fan tracker. Swap in your own files any time.
 
-## About the seed `2025.json`
+## About `2026.json`
 
 All seven groups (A–G) and their killers were transcribed from Slate's
 spreadsheet — 42 killers across the groups. That's every current Dead by
 Daylight killer except **The Animatronic**, which sits out the tournament.
 
-The **match scores and the knockout bracket are placeholder examples** so the
-through/eliminated colouring, the YouTube links and the bracket are all visible —
-Group B is played out in full (giving green/red/neutral rows), and the knockout
-is a made-up run to a champion. Replace all of it, plus the placeholder `video`
-URL, with the real results.
+Results are real and go in as the matches air. The knockout rounds are in place
+with empty matches, ready for slots and scores once the groups finish.
