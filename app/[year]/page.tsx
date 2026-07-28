@@ -31,7 +31,7 @@ export default async function YearPage(props: PageProps<"/[year]">) {
   if (!tournament) notFound();
 
   const groups = buildGroupViews(tournament);
-  const knockout = buildKnockout(tournament);
+  const knockout = buildKnockout(tournament, groups);
   const years = getYears();
 
   return (

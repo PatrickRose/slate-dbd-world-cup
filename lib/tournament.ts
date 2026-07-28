@@ -18,11 +18,21 @@ export interface Killer {
   avatar?: string;
 }
 
+/** A match-up, as a pair of killer ids. Which one is first doesn't matter. */
+export type Pairing = [string, string];
+
 export interface Group {
   /** Display name, e.g. "Group A". */
   name: string;
   /** Killer ids belonging to this group (round-robin among them). */
   killers: string[];
+  /**
+   * Which round each match-up is played in: one list of pairings per round,
+   * earliest first. Optional — left out, a schedule is generated (see
+   * `defaultSchedule`). The local editor writes this whenever you drag a match
+   * to a different round, so you don't normally author it by hand.
+   */
+  rounds?: Pairing[][];
 }
 
 export interface Result {
@@ -43,26 +53,39 @@ export interface Result {
   video?: string;
 }
 
-/** One knockout-stage match. */
-export interface KnockoutMatch {
-  /** Killer id for side A, if known. Omit for a not-yet-decided slot. */
-  a?: string;
-  /** Killer id for side B, if known. */
-  b?: string;
-  /** Placeholder text when the killer isn't known yet, e.g. "Winner Group A". */
-  aLabel?: string;
-  bLabel?: string;
-  /** Hooks scored by each side. Omit until the match has been played. */
-  aHooks?: number;
-  bHooks?: number;
+/**
+ * Who fills a first-round knockout slot, written as a qualifying position
+ * rather than a killer — the killer is whoever ends up there.
+ *
+ * - `"Group A:1"` — winner of Group A, `"Group A:2"` its runner-up, and so on.
+ * - `"best3:1"` — the best third-placed killer across all groups, `"best3:2"`
+ *   the next best. Only as many as `bestThirdPlace` are available.
+ */
+export type SeedRef = string;
+
+/** One knockout-stage score. Matches are addressed by position in the bracket. */
+export interface KnockoutScore {
+  /** 1-based round number, earliest round first. */
+  round: number;
+  /** 1-based match number within that round, top to bottom. */
+  match: number;
+  /** Hooks scored by the first and second slot of the match. */
+  aHooks: number;
+  bHooks: number;
   /** Full YouTube URL for the match, ideally timestamped. */
   video?: string;
 }
 
-/** A knockout round, e.g. Quarter-finals. Rounds are listed earliest first. */
-export interface KnockoutRound {
-  name: string;
-  matches: KnockoutMatch[];
+/**
+ * The knockout stage. Only the first-round pairings are authored — every later
+ * round is derived by advancing the winners, so the bracket builds itself as
+ * scores go in.
+ */
+export interface Knockout {
+  /** First-round pairings, top to bottom. Two `SeedRef`s per match. */
+  seeds: Array<[SeedRef, SeedRef]>;
+  /** Scores for the matches played so far, in any order. */
+  scores?: KnockoutScore[];
 }
 
 export interface Tournament {
@@ -85,7 +108,7 @@ export interface Tournament {
   groups: Group[];
   results: Result[];
   /** Optional single-elimination bracket after the group stage. */
-  knockout?: KnockoutRound[];
+  knockout?: Knockout;
 }
 
 /**
@@ -127,16 +150,33 @@ export interface StandingRow {
   status: QualificationStatus;
 }
 
+/** One round of a group: the matches played together, e.g. "Round 1". */
+export interface RoundView {
+  name: string;
+  fixtures: Fixture[];
+}
+
 export interface GroupView {
   name: string;
   standings: StandingRow[];
-  fixtures: Fixture[];
+  /** Matches grouped into rounds, earliest first. */
+  rounds: RoundView[];
+  /**
+   * Match-ups the group's authored `rounds` didn't mention — normally empty,
+   * since the editor always writes a complete schedule. They show up here (and
+   * as a bucket in the editor) rather than being silently dropped, so adding a
+   * killer to a group can't lose matches.
+   */
+  unscheduled: Fixture[];
 }
 
 /** One killer's slot within a knockout match. */
 export interface KnockoutSideView {
   killer?: Killer;
-  /** What to display: the killer name, or a placeholder like "Winner Group A". */
+  /**
+   * What to display: the killer's name once known, otherwise where they'll come
+   * from — "Winner Group A", "Best 3rd place", "Winner of QF 2".
+   */
   label: string;
   hooks?: number;
   winner: boolean;
@@ -147,6 +187,8 @@ export interface KnockoutMatchView {
   b: KnockoutSideView;
   video?: string;
   played: boolean;
+  /** Played, but level on hooks — so nobody advances yet. */
+  drawn: boolean;
 }
 
 export interface KnockoutRoundView {
@@ -192,17 +234,60 @@ export function getTournament(year: number): Tournament | undefined {
 // ---------------------------------------------------------------------------
 
 /**
- * Build the full round-robin fixture list for a set of killer ids, in a stable
- * order. Every pair plays once (a vs b).
+ * Every match-up in a group: each pair of killers plays once. Order is stable
+ * so a pairing always looks the same way round.
  */
-function roundRobin(ids: string[]): Array<[string, string]> {
-  const pairs: Array<[string, string]> = [];
+export function allPairings(ids: string[]): Pairing[] {
+  const pairs: Pairing[] = [];
   for (let i = 0; i < ids.length; i++) {
     for (let j = i + 1; j < ids.length; j++) {
       pairs.push([ids[i], ids[j]]);
     }
   }
   return pairs;
+}
+
+/** Order-insensitive key for a pairing, so A-v-B and B-v-A are the same match. */
+export function pairingKey(a: string, b: string): string {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+/**
+ * Split a group's match-ups into rounds, so every killer plays exactly once per
+ * round. Uses the circle method, seeded so that the first round pairs the killer
+ * list up two at a time (1v2, 3v4, 5v6) — the way Slate's spreadsheet lays it
+ * out. Later rounds are a valid schedule but won't necessarily match the
+ * spreadsheet's; drag matches between rounds in the editor to line them up.
+ *
+ * With an odd number of killers one sits out each round.
+ */
+export function defaultSchedule(ids: string[]): Pairing[][] {
+  if (ids.length < 2) return [];
+
+  // The circle method pairs first-with-last, second-with-second-last, and so on.
+  // Interleaving the killers as 1, 3, 5 … 6, 4, 2 makes that come out as the
+  // consecutive pairs 1v2, 3v4, 5v6 for the opening round.
+  const evens = ids.filter((_, i) => i % 2 === 0);
+  const odds = ids.filter((_, i) => i % 2 === 1);
+  let circle: Array<string | undefined> = [...evens, ...odds.reverse()];
+  if (circle.length % 2 === 1) circle.push(undefined); // odd one out each round
+
+  const size = circle.length;
+  const rounds: Pairing[][] = [];
+
+  for (let r = 0; r < size - 1; r++) {
+    const round: Pairing[] = [];
+    for (let i = 0; i < size / 2; i++) {
+      const a = circle[i];
+      const b = circle[size - 1 - i];
+      if (a !== undefined && b !== undefined) round.push([a, b]);
+    }
+    rounds.push(round);
+    // Rotate everything but the first position.
+    circle = [circle[0], circle[size - 1], ...circle.slice(1, size - 1)];
+  }
+
+  return rounds;
 }
 
 /**
@@ -226,10 +311,31 @@ function findResult(
   return undefined;
 }
 
+/** Every match-up in a group view, whichever round it landed in. */
+export function groupFixtures(view: GroupView): Fixture[] {
+  return [...view.rounds.flatMap((r) => r.fixtures), ...view.unscheduled];
+}
+
+/** Same fixture, sides swapped. */
+function flipFixture(f: Fixture): Fixture {
+  const result = f.result;
+  return {
+    a: f.b,
+    b: f.a,
+    result: result && {
+      ...result,
+      a: result.b,
+      b: result.a,
+      aHooks: result.bHooks,
+      bHooks: result.aHooks,
+    },
+  };
+}
+
 /**
- * Turn raw tournament data into per-group views with computed standings and
- * a full fixture list. Standings are sorted by points, then total hooks, then
- * name — matching how Slate's spreadsheet ranks killers.
+ * Turn raw tournament data into per-group views with computed standings and the
+ * match-ups laid out into rounds. Standings are sorted by points, then total
+ * hooks, then name — matching how Slate's spreadsheet ranks killers.
  */
 export function buildGroupViews(t: Tournament): GroupView[] {
   const killerById = new Map(t.killers.map((k) => [k.id, k]));
@@ -256,7 +362,7 @@ export function buildGroupViews(t: Tournament): GroupView[] {
       ]),
     );
 
-    const fixtures: Fixture[] = roundRobin(ids).map(([idA, idB]) => {
+    const buildFixture = ([idA, idB]: Pairing): Fixture => {
       const result = findResult(t.results, group.name, idA, idB);
       if (result) {
         const rowA = rows.get(idA)!;
@@ -282,11 +388,39 @@ export function buildGroupViews(t: Tournament): GroupView[] {
         }
       }
       return { a: killer(idA), b: killer(idB), result };
-    });
+    };
+
+    // Every match-up gets built exactly once — that's what feeds the standings —
+    // then they're laid out into the rounds the group asks for.
+    const fixtureByPair = new Map<string, Fixture>(
+      allPairings(ids).map((pairing) => [
+        pairingKey(...pairing),
+        buildFixture(pairing),
+      ]),
+    );
+
+    const schedule = group.rounds ?? defaultSchedule(ids);
+    const scheduled = new Set<string>();
+    const rounds: RoundView[] = schedule.map((pairings, i) => ({
+      name: `Round ${i + 1}`,
+      fixtures: pairings.flatMap(([idA, idB]) => {
+        const key = pairingKey(idA, idB);
+        // Ignore anything that isn't a real match-up in this group, or a repeat.
+        const fixture = scheduled.has(key) ? undefined : fixtureByPair.get(key);
+        if (!fixture) return [];
+        scheduled.add(key);
+        // Show the pairing the way round the schedule lists it.
+        return [fixture.a.id === idA ? fixture : flipFixture(fixture)];
+      }),
+    }));
+
+    const unscheduled = [...fixtureByPair]
+      .filter(([key]) => !scheduled.has(key))
+      .map(([, fixture]) => fixture);
 
     const standings = [...rows.values()].sort(rankRows);
 
-    return { name: group.name, standings, fixtures };
+    return { name: group.name, standings, rounds, unscheduled };
   });
 
   computeQualification(views, t);
@@ -326,7 +460,7 @@ function computeQualification(views: GroupView[], t: Tournament): void {
   const qualifyingDepth = advance + (bestThirds > 0 ? 1 : 0);
 
   const allComplete = views.every((v) =>
-    v.fixtures.every((f) => f.result !== undefined),
+    groupFixtures(v).every((f) => f.result !== undefined),
   );
 
   if (allComplete) {
@@ -373,41 +507,156 @@ function computeQualification(views: GroupView[], t: Tournament): void {
   }
 }
 
+/** How a seed reads before it's known: `"Group A:1"` → "Winner Group A". */
+function seedLabel(ref: SeedRef): string {
+  const best3 = /^best3:(\d+)$/.exec(ref);
+  if (best3) {
+    const n = Number(best3[1]);
+    return n === 1 ? "Best 3rd place" : `${ordinal(n)} best 3rd place`;
+  }
+
+  const position = /^(.*):(\d+)$/.exec(ref);
+  if (!position) return ref;
+  const [, group, place] = position;
+  return Number(place) === 1
+    ? `Winner ${group}`
+    : `${ordinal(Number(place))} ${group}`;
+}
+
+function ordinal(n: number): string {
+  const suffix =
+    n % 100 >= 11 && n % 100 <= 13
+      ? "th"
+      : ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  return `${n}${suffix}`;
+}
+
 /**
- * Resolve the knockout bracket into a view model: killer ids become Killer
- * objects, missing slots fall back to their placeholder label, and the winner
- * of each played match is flagged.
+ * Standard names for a knockout round, based on how many killers are left in
+ * it. Anything unusual falls back to "Round N".
  */
-export function buildKnockout(t: Tournament): KnockoutRoundView[] {
-  if (!t.knockout) return [];
-  const killerById = new Map(t.killers.map((k) => [k.id, k]));
+function roundName(teams: number, index: number): string {
+  switch (teams) {
+    case 2:
+      return "Final";
+    case 4:
+      return "Semi-finals";
+    case 8:
+      return "Quarter-finals";
+    default:
+      return teams > 8 ? `Round of ${teams}` : `Round ${index + 1}`;
+  }
+}
 
-  return t.knockout.map((round) => ({
-    name: round.name,
-    matches: round.matches.map((m): KnockoutMatchView => {
-      const killerA = m.a ? killerById.get(m.a) : undefined;
-      const killerB = m.b ? killerById.get(m.b) : undefined;
-      const played =
-        typeof m.aHooks === "number" && typeof m.bHooks === "number";
-      const aWins = played && m.aHooks! > m.bHooks!;
-      const bWins = played && m.bHooks! > m.aHooks!;
+/**
+ * Look up whoever currently occupies a qualifying position: `"Group A:2"` is the
+ * runner-up of Group A, `"best3:1"` the best third-placed killer overall.
+ *
+ * Only returns a killer once that position is settled — while the group could
+ * still change hands, the slot stays open and shows its label instead.
+ */
+function resolveSeed(
+  ref: SeedRef,
+  groups: GroupView[],
+  t: Tournament,
+): Killer | undefined {
+  const best3 = /^best3:(\d+)$/.exec(ref);
+  if (best3) {
+    const advance = t.advancePerGroup ?? 2;
+    // Only meaningful once every group is done, since it ranks across them all.
+    if (!groups.every((g) => groupFixtures(g).every((f) => f.result))) {
+      return undefined;
+    }
+    const thirds = groups
+      .map((g) => g.standings[advance])
+      .filter((r): r is StandingRow => r !== undefined)
+      .sort(rankRows);
+    return thirds[Number(best3[1]) - 1]?.killer;
+  }
 
-      return {
-        video: m.video,
+  const position = /^(.*):(\d+)$/.exec(ref);
+  if (!position) return undefined;
+  const [, groupName, place] = position;
+  const group = groups.find((g) => g.name === groupName);
+  if (!group) return undefined;
+  // Positions are only final once the group has finished playing.
+  if (!groupFixtures(group).every((f) => f.result)) return undefined;
+  return group.standings[Number(place) - 1]?.killer;
+}
+
+/**
+ * Build the bracket: the authored seeds make the first round, then each
+ * following round is half the size, filled by the winners below it. A match
+ * that finished level leaves the slot above it open.
+ */
+export function buildKnockout(
+  t: Tournament,
+  groups: GroupView[],
+): KnockoutRoundView[] {
+  const seeds = t.knockout?.seeds ?? [];
+  if (seeds.length === 0) return [];
+
+  const scoreAt = new Map(
+    (t.knockout?.scores ?? []).map((s) => [`${s.round}.${s.match}`, s]),
+  );
+
+  const rounds: KnockoutRoundView[] = [];
+  // Each round is described by its slots: a known killer, or a label to show.
+  let slots: Array<{ killer?: Killer; label: string }> = seeds
+    .flat()
+    .map((ref) => ({ killer: resolveSeed(ref, groups, t), label: seedLabel(ref) }));
+
+  for (let r = 0; slots.length >= 2; r++) {
+    const name = roundName(slots.length, r);
+    const matches: KnockoutMatchView[] = [];
+    const winners: Array<{ killer?: Killer; label: string }> = [];
+
+    for (let m = 0; m < slots.length; m += 2) {
+      const a = slots[m];
+      const b = slots[m + 1];
+      const score = scoreAt.get(`${r + 1}.${m / 2 + 1}`);
+      const played = score !== undefined;
+      const aWins = played && score.aHooks > score.bHooks;
+      const bWins = played && score.bHooks > score.aHooks;
+
+      matches.push({
+        video: score?.video,
         played,
+        drawn: played && !aWins && !bWins,
         a: {
-          killer: killerA,
-          label: killerA?.name ?? m.aLabel ?? "TBD",
-          hooks: m.aHooks,
+          killer: a.killer,
+          label: a.killer?.name ?? a.label,
+          hooks: score?.aHooks,
           winner: aWins,
         },
         b: {
-          killer: killerB,
-          label: killerB?.name ?? m.bLabel ?? "TBD",
-          hooks: m.bHooks,
+          killer: b.killer,
+          label: b.killer?.name ?? b.label,
+          hooks: score?.bHooks,
           winner: bWins,
         },
-      };
-    }),
-  }));
+      });
+
+      const winner = aWins ? a : bWins ? b : undefined;
+      winners.push({
+        killer: winner?.killer,
+        label: `Winner of ${shortRound(name)} ${m / 2 + 1}`,
+      });
+    }
+
+    rounds.push({ name, matches });
+    if (matches.length === 1) break; // that was the final
+    slots = winners;
+  }
+
+  return rounds;
+}
+
+/** "Quarter-finals" → "QF", for the compact "Winner of QF 2" labels. */
+function shortRound(name: string): string {
+  if (name === "Quarter-finals") return "QF";
+  if (name === "Semi-finals") return "SF";
+  if (name === "Final") return "the final";
+  const of = /^Round of (\d+)$/.exec(name);
+  return of ? `R${of[1]}` : name;
 }

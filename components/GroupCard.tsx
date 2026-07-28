@@ -144,17 +144,36 @@ export function GroupCard({ group }: { group: GroupView }) {
         </tbody>
       </table>
 
-      {/* Fixtures */}
-      <div className="border-t border-black/10 dark:border-white/10">
-        <h3 className="px-5 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-          Matches
-        </h3>
-        <ul>
-          {group.fixtures.map((f) => (
-            <MatchRow key={`${f.a.id}-${f.b.id}`} fixture={f} />
-          ))}
-        </ul>
-      </div>
+      {/* Matches, round by round */}
+      {group.rounds.map((round) => (
+        <MatchList key={round.name} title={round.name} fixtures={round.fixtures} />
+      ))}
+      {group.unscheduled.length > 0 && (
+        <MatchList title="Not scheduled" fixtures={group.unscheduled} />
+      )}
     </section>
+  );
+}
+
+function MatchList({
+  title,
+  fixtures,
+}: {
+  title: string;
+  fixtures: Fixture[];
+}) {
+  if (fixtures.length === 0) return null;
+
+  return (
+    <div className="border-t border-black/10 dark:border-white/10">
+      <h3 className="px-5 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+        {title}
+      </h3>
+      <ul>
+        {fixtures.map((f) => (
+          <MatchRow key={`${f.a.id}-${f.b.id}`} fixture={f} />
+        ))}
+      </ul>
+    </div>
   );
 }

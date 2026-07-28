@@ -7,7 +7,7 @@
  * sections the editor owns (`results` and `knockout`) and copy every other
  * top-level value through as its exact original source text.
  */
-import type { KnockoutRound, Result } from "./tournament";
+import type { Group, Knockout, Pairing, Result } from "./tournament";
 
 const IND = "  ";
 
@@ -115,49 +115,84 @@ function serializeResults(results: Result[]): string {
   return `[\n${lines.map((l) => IND.repeat(2) + l).join(",\n")}\n${IND}]`;
 }
 
-/** One round per block, one match per line. */
-function serializeKnockout(rounds: KnockoutRound[]): string {
-  if (rounds.length === 0) return "[]";
-
-  const blocks = rounds.map((round) => {
-    const matches = round.matches.map((m) =>
-      compactObject([
-        ["a", m.a],
-        ["b", m.b],
-        ["aLabel", m.aLabel],
-        ["bLabel", m.bLabel],
-        ["aHooks", m.aHooks],
-        ["bHooks", m.bHooks],
-        ["video", m.video],
-      ]),
-    );
-    const matchList = matches.length
-      ? `[\n${matches.map((m) => IND.repeat(4) + m).join(",\n")}\n${IND.repeat(3)}]`
-      : "[]";
-
-    return [
-      `${IND.repeat(2)}{`,
-      `${IND.repeat(3)}"name": ${JSON.stringify(round.name)},`,
-      `${IND.repeat(3)}"matches": ${matchList}`,
-      `${IND.repeat(2)}}`,
-    ].join("\n");
-  });
-
-  return `[\n${blocks.join(",\n")}\n${IND}]`;
+/** `["a", "b"]` — a pairing, inline. */
+function serializePairing([a, b]: Pairing): string {
+  return `[${JSON.stringify(a)}, ${JSON.stringify(b)}]`;
 }
 
 /**
- * Return the source of `original` with its `results` (and, when supplied, its
- * `knockout`) replaced. Untouched top-level keys keep their exact original
- * formatting, and their order in the file is preserved.
+ * One group per block: name and killers on a line each, then the schedule with
+ * one round per line so it reads like the spreadsheet's columns.
+ */
+function serializeGroups(groups: Group[]): string {
+  const blocks = groups.map((group) => {
+    const lines = [
+      `${IND.repeat(3)}"name": ${JSON.stringify(group.name)}`,
+      `${IND.repeat(3)}"killers": [${group.killers.map((k) => JSON.stringify(k)).join(", ")}]`,
+    ];
+
+    if (group.rounds && group.rounds.length > 0) {
+      const rounds = group.rounds.map(
+        (round) => `${IND.repeat(4)}[${round.map(serializePairing).join(", ")}]`,
+      );
+      lines.push(
+        `${IND.repeat(3)}"rounds": [\n${rounds.join(",\n")}\n${IND.repeat(3)}]`,
+      );
+    }
+
+    return `${IND.repeat(2)}{\n${lines.join(",\n")}\n${IND.repeat(2)}}`;
+  });
+
+  return blocks.length ? `[\n${blocks.join(",\n")}\n${IND}]` : "[]";
+}
+
+/** Seeds one match per line, then the scores one per line. */
+function serializeKnockout(knockout: Knockout): string {
+  const seeds = knockout.seeds.map(
+    ([a, b]) => `${IND.repeat(3)}[${JSON.stringify(a)}, ${JSON.stringify(b)}]`,
+  );
+  const lines = [
+    `${IND.repeat(2)}"seeds": ${
+      seeds.length ? `[\n${seeds.join(",\n")}\n${IND.repeat(2)}]` : "[]"
+    }`,
+  ];
+
+  if (knockout.scores && knockout.scores.length > 0) {
+    const scores = knockout.scores.map((s) =>
+      compactObject([
+        ["round", s.round],
+        ["match", s.match],
+        ["aHooks", s.aHooks],
+        ["bHooks", s.bHooks],
+        ["video", s.video],
+      ]),
+    );
+    lines.push(
+      `${IND.repeat(2)}"scores": [\n${scores
+        .map((s) => IND.repeat(3) + s)
+        .join(",\n")}\n${IND.repeat(2)}]`,
+    );
+  }
+
+  return `{\n${lines.join(",\n")}\n${IND}}`;
+}
+
+/**
+ * Return the source of `original` with the sections the editor owns replaced —
+ * the group schedules, the results and the knockout. Untouched top-level keys
+ * keep their exact original formatting, and their order in the file is
+ * preserved.
  */
 export function writeTournamentJson(
   original: string,
-  next: { results: Result[]; knockout?: KnockoutRound[] },
+  next: { groups?: Group[]; results: Result[]; knockout?: Knockout },
 ): string {
   const replacements = new Map<string, string>([
     ["results", serializeResults(next.results)],
   ]);
+  if (next.groups) {
+    replacements.set("groups", serializeGroups(next.groups));
+  }
   if (next.knockout) {
     replacements.set("knockout", serializeKnockout(next.knockout));
   }

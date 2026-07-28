@@ -3,12 +3,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
-import { field, type SaveState } from "./editor";
+import { field, type SaveState, type SchedulePayload } from "./editor";
 import {
+  allPairings,
   buildGroupViews,
+  buildKnockout,
   getTournament,
-  type KnockoutRound,
+  pairingKey,
+  type Knockout,
+  type KnockoutScore,
+  type Pairing,
   type Result,
+  type SeedRef,
 } from "./tournament";
 import { writeTournamentJson } from "./tournament-json";
 
@@ -31,16 +37,6 @@ function readText(formData: FormData, name: string): string | undefined {
   if (typeof raw !== "string") return undefined;
   const trimmed = raw.trim();
   return trimmed === "" ? undefined : trimmed;
-}
-
-/** A killer id from a `<select>`, or undefined for the "not decided yet" slot. */
-function readKiller(
-  formData: FormData,
-  name: string,
-  known: Set<string>,
-): string | undefined {
-  const id = readText(formData, name);
-  return id && known.has(id) ? id : undefined;
 }
 
 /**
@@ -74,8 +70,119 @@ function readMatch(
 }
 
 /**
- * Write the scores and video links from the editor form into
- * `data/<year>.json`.
+ * Turn one group's submitted layout into rounds of pairings.
+ *
+ * The submitted keys are only ever *positions*: every pairing comes back out of
+ * the group's own killer list, so an unknown or repeated key is dropped rather
+ * than trusted. Match-ups the layout didn't mention stay unscheduled, and empty
+ * rounds are dropped since they carry nothing.
+ */
+function readSchedule(
+  formData: FormData,
+  groupIndex: number,
+  killers: string[],
+  groupName: string,
+  problems: string[],
+): { rounds: Pairing[][]; unscheduled: Pairing[] } {
+  const pairings = new Map(
+    allPairings(killers).map((pairing) => [pairingKey(...pairing), pairing]),
+  );
+
+  let payload: SchedulePayload | undefined;
+  const raw = formData.get(field.groupSchedule(groupIndex));
+  if (typeof raw === "string" && raw !== "") {
+    try {
+      const parsed = JSON.parse(raw) as SchedulePayload;
+      if (Array.isArray(parsed?.rounds)) payload = parsed;
+    } catch {
+      // Fall through to the message below.
+    }
+  }
+  if (!payload) {
+    problems.push(`${groupName}: couldn't read the round layout.`);
+    return { rounds: [], unscheduled: [...pairings.values()] };
+  }
+
+  const taken = new Set<string>();
+  const take = (keys: unknown): Pairing[] =>
+    (Array.isArray(keys) ? keys : []).flatMap((key) => {
+      if (typeof key !== "string" || taken.has(key)) return [];
+      const pairing = pairings.get(key);
+      if (!pairing) return [];
+      taken.add(key);
+      return [pairing];
+    });
+
+  const rounds = payload.rounds.map(take).filter((round) => round.length > 0);
+  const unscheduled = [...pairings]
+    .filter(([key]) => !taken.has(key))
+    .map(([, pairing]) => pairing);
+
+  return { rounds, unscheduled };
+}
+
+/** The authored first-round pairings, checked against the positions on offer. */
+function readSeeds(
+  formData: FormData,
+  valid: Set<SeedRef>,
+  problems: string[],
+): Array<[SeedRef, SeedRef]> | undefined {
+  const raw = formData.get(field.seeds);
+  if (typeof raw !== "string" || raw === "") return undefined;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    problems.push("Knockout: couldn't read the seeding.");
+    return undefined;
+  }
+  if (!Array.isArray(parsed)) return undefined;
+
+  const seeds: Array<[SeedRef, SeedRef]> = [];
+  parsed.forEach((pair, i) => {
+    if (!Array.isArray(pair) || pair.length !== 2) return;
+    const [a, b] = pair as [unknown, unknown];
+    if (typeof a !== "string" || typeof b !== "string") return;
+    if (!valid.has(a) || !valid.has(b)) {
+      problems.push(`Knockout match ${i + 1}: unknown qualifying position.`);
+      return;
+    }
+    seeds.push([a, b]);
+  });
+
+  const used = new Map<SeedRef, number>();
+  seeds.flat().forEach((ref) => used.set(ref, (used.get(ref) ?? 0) + 1));
+  for (const [ref, count] of used) {
+    if (count > 1) {
+      problems.push(
+        `Knockout: ${ref} is seeded into ${count} slots — each position can only qualify once.`,
+      );
+    }
+  }
+
+  return seeds;
+}
+
+/** Every qualifying position that can be seeded this year. */
+function seedRefs(t: {
+  groups: Array<{ name: string }>;
+  advancePerGroup?: number;
+  bestThirdPlace?: number;
+}): SeedRef[] {
+  const refs: SeedRef[] = [];
+  for (const group of t.groups) {
+    for (let place = 1; place <= (t.advancePerGroup ?? 2); place++) {
+      refs.push(`${group.name}:${place}`);
+    }
+  }
+  for (let n = 1; n <= (t.bestThirdPlace ?? 0); n++) refs.push(`best3:${n}`);
+  return refs;
+}
+
+/**
+ * Write the scores, the round each match is played in, and the knockout seeding
+ * from the editor form into `data/<year>.json`.
  *
  * Local development only — the page that calls this doesn't exist in a
  * production build (see `next.config.ts`), but the guard below means a stray
@@ -99,73 +206,82 @@ export async function saveTournament(
   }
 
   const problems: string[] = [];
-  const knownKillers = new Set(tournament.killers.map((k) => k.id));
+  const killerName = (id: string) =>
+    tournament.killers.find((k) => k.id === id)?.name ?? id;
 
-  // --- Group stage: one result per fixture that has both hook counts. -------
+  // --- Group stage: the round layout, plus a result per match-up that has ----
+  // --- both hook counts. ----------------------------------------------------
+  const schedules = tournament.groups.map((group, gi) =>
+    readSchedule(formData, gi, group.killers, group.name, problems),
+  );
+
   const results: Result[] = [];
-  buildGroupViews(tournament).forEach((group, gi) => {
-    group.fixtures.forEach((fixture, fi) => {
+  tournament.groups.forEach((group, gi) => {
+    const { rounds, unscheduled } = schedules[gi];
+    for (const [a, b] of [...rounds.flat(), ...unscheduled]) {
+      const key = pairingKey(a, b);
+      const label = `${group.name}, ${killerName(a)} v ${killerName(b)}`;
+
       const { aHooks, bHooks, video } = readMatch(
         formData,
         {
-          aHooks: field.groupHooks(gi, fi, "a"),
-          bHooks: field.groupHooks(gi, fi, "b"),
-          video: field.groupVideo(gi, fi),
+          aHooks: field.groupHooks(gi, key, "a"),
+          bHooks: field.groupHooks(gi, key, "b"),
+          video: field.groupVideo(gi, key),
         },
-        `${group.name}, ${fixture.a.name} v ${fixture.b.name}`,
+        label,
         problems,
       );
 
       if (aHooks === undefined || bHooks === undefined) {
         if (video) {
-          problems.push(
-            `${group.name}, ${fixture.a.name} v ${fixture.b.name}: enter the score to save the video link.`,
-          );
+          problems.push(`${label}: enter the score to save the video link.`);
         }
-        return; // No score recorded — stays an upcoming fixture.
+        continue; // No score recorded — stays an upcoming fixture.
       }
 
-      results.push({
-        group: group.name,
-        a: fixture.a.id,
-        b: fixture.b.id,
-        aHooks,
-        bHooks,
-        video,
-      });
-    });
+      results.push({ group: group.name, a, b, aHooks, bHooks, video });
+    }
   });
 
-  // --- Knockout: the bracket shape stays as authored, slots/scores update. --
-  const knockout: KnockoutRound[] | undefined = tournament.knockout?.map(
-    (round, ri) => ({
-      name: round.name,
-      matches: round.matches.map((match, mi) => {
-        const a = readKiller(formData, field.knockoutSlot(ri, mi, "a"), knownKillers);
-        const b = readKiller(formData, field.knockoutSlot(ri, mi, "b"), knownKillers);
+  // --- Knockout: the seeding is authored, the rest follows the results. ------
+  let knockout: Knockout | undefined;
+  if (tournament.knockout) {
+    // The bracket as it stands tells us which match positions exist to score.
+    const bracket = buildKnockout(tournament, buildGroupViews(tournament));
+    const seeds =
+      readSeeds(formData, new Set(seedRefs(tournament)), problems) ??
+      tournament.knockout.seeds;
+
+    const scores: KnockoutScore[] = [];
+    bracket.forEach((round, ri) => {
+      round.matches.forEach((_, mi) => {
+        const [roundNo, matchNo] = [ri + 1, mi + 1];
+        const label = `${round.name}, match ${matchNo}`;
         const { aHooks, bHooks, video } = readMatch(
           formData,
           {
-            aHooks: field.knockoutHooks(ri, mi, "a"),
-            bHooks: field.knockoutHooks(ri, mi, "b"),
-            video: field.knockoutVideo(ri, mi),
+            aHooks: field.knockoutHooks(roundNo, matchNo, "a"),
+            bHooks: field.knockoutHooks(roundNo, matchNo, "b"),
+            video: field.knockoutVideo(roundNo, matchNo),
           },
-          `${round.name}, match ${mi + 1}`,
+          label,
           problems,
         );
 
-        return {
-          a,
-          b,
-          aLabel: match.aLabel,
-          bLabel: match.bLabel,
-          aHooks,
-          bHooks,
-          video,
-        };
-      }),
-    }),
-  );
+        if (aHooks === undefined || bHooks === undefined) {
+          if (video) {
+            problems.push(`${label}: enter the score to save the video link.`);
+          }
+          return;
+        }
+
+        scores.push({ round: roundNo, match: matchNo, aHooks, bHooks, video });
+      });
+    });
+
+    knockout = { seeds, ...(scores.length > 0 ? { scores } : {}) };
+  }
 
   if (problems.length > 0) {
     return {
@@ -178,7 +294,17 @@ export async function saveTournament(
   const file = path.join(process.cwd(), "data", `${year}.json`);
   try {
     const original = fs.readFileSync(file, "utf8");
-    fs.writeFileSync(file, writeTournamentJson(original, { results, knockout }));
+    fs.writeFileSync(
+      file,
+      writeTournamentJson(original, {
+        groups: tournament.groups.map((group, gi) => ({
+          ...group,
+          rounds: schedules[gi].rounds,
+        })),
+        results,
+        knockout,
+      }),
+    );
   } catch (error) {
     return {
       status: "error",
@@ -190,13 +316,15 @@ export async function saveTournament(
 
   revalidatePath(`/${year}`);
 
-  const played = results.length;
   const total = tournament.groups.reduce(
     (sum, g) => sum + (g.killers.length * (g.killers.length - 1)) / 2,
     0,
   );
+  const unscheduled = schedules.reduce((n, s) => n + s.unscheduled.length, 0);
   return {
     status: "saved",
-    message: `Saved to data/${year}.json — ${played} of ${total} group matches played.`,
+    message:
+      `Saved to data/${year}.json — ${results.length} of ${total} group matches played` +
+      (unscheduled > 0 ? `, ${unscheduled} not in a round yet.` : "."),
   };
 }

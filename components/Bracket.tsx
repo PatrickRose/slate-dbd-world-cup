@@ -38,6 +38,11 @@ function MatchCard({ match }: { match: KnockoutMatchView }) {
       <Side side={match.a} played={match.played} />
       <div className="border-t border-black/5 dark:border-white/10" />
       <Side side={match.b} played={match.played} />
+      {match.drawn && (
+        <p className="border-t border-black/5 bg-amber-50 px-3 py-1 text-center text-xs font-medium text-amber-700 dark:border-white/10 dark:bg-amber-500/10 dark:text-amber-400">
+          Level on hooks — no one through
+        </p>
+      )}
       {match.video && (
         <a
           href={match.video}
@@ -55,11 +60,11 @@ function MatchCard({ match }: { match: KnockoutMatchView }) {
   );
 }
 
-/** Find the champion (winner of the final match), if it has been played. */
+/** Find the champion (winner of the final match), if it has been decided. */
 function champion(rounds: KnockoutRoundView[]): KnockoutSideView | undefined {
   const finalRound = rounds[rounds.length - 1];
   const finalMatch = finalRound?.matches.length === 1 ? finalRound.matches[0] : undefined;
-  if (!finalMatch?.played) return undefined;
+  if (!finalMatch?.played || finalMatch.drawn) return undefined;
   return finalMatch.a.winner ? finalMatch.a : finalMatch.b;
 }
 

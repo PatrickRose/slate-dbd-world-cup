@@ -54,31 +54,80 @@
   "groups": [
     {
       "name": "Group A",
-      "killers": ["houndmaster", "skullmerchant", "xenomorph", "blight", "twins", "plague"]
+      "killers": ["houndmaster", "skullmerchant", "xenomorph", "blight", "twins", "plague"],
+      "rounds": [
+        [["houndmaster", "skullmerchant"], ["xenomorph", "blight"], ["twins", "plague"]],
+        [["houndmaster", "plague"], ["skullmerchant", "xenomorph"], ["blight", "twins"]],
+        [["houndmaster", "xenomorph"], ["skullmerchant", "twins"], ["blight", "plague"]],
+        [["houndmaster", "blight"], ["skullmerchant", "plague"], ["xenomorph", "twins"]],
+        [["houndmaster", "twins"], ["skullmerchant", "blight"], ["xenomorph", "plague"]]
+      ]
     },
     {
       "name": "Group B",
-      "killers": ["trickster", "ghostie", "executioner", "wraith", "clown", "hag"]
+      "killers": ["trickster", "ghostie", "executioner", "wraith", "clown", "hag"],
+      "rounds": [
+        [["trickster", "clown"], ["ghostie", "wraith"], ["executioner", "hag"]],
+        [["trickster", "executioner"], ["ghostie", "hag"], ["wraith", "clown"]],
+        [["trickster", "ghostie"], ["clown", "executioner"], ["wraith", "hag"]],
+        [["trickster", "wraith"], ["clown", "hag"], ["ghostie", "executioner"]],
+        [["trickster", "hag"], ["clown", "ghostie"], ["wraith", "executioner"]]
+      ]
     },
     {
       "name": "Group C",
-      "killers": ["spirit", "knight", "jason", "dredge", "slinger", "trapper"]
+      "killers": ["spirit", "knight", "jason", "dredge", "slinger", "trapper"],
+      "rounds": [
+        [["spirit", "knight"], ["jason", "dredge"], ["slinger", "trapper"]],
+        [["spirit", "trapper"], ["knight", "dredge"], ["jason", "slinger"]],
+        [["spirit", "slinger"], ["trapper", "dredge"], ["jason", "knight"]],
+        [["spirit", "jason"], ["trapper", "knight"], ["slinger", "dredge"]],
+        [["spirit", "dredge"], ["trapper", "jason"], ["slinger", "knight"]]
+      ]
     },
     {
       "name": "Group D",
-      "killers": ["krasue", "cenobite", "ghoul", "huntress", "chucky", "singularity"]
+      "killers": ["krasue", "cenobite", "ghoul", "huntress", "chucky", "singularity"],
+      "rounds": [
+        [["krasue", "singularity"], ["cenobite", "ghoul"], ["huntress", "chucky"]],
+        [["krasue", "cenobite"], ["ghoul", "huntress"], ["chucky", "singularity"]],
+        [["cenobite", "huntress"], ["ghoul", "singularity"], ["chucky", "krasue"]],
+        [["cenobite", "chucky"], ["ghoul", "krasue"], ["huntress", "singularity"]],
+        [["cenobite", "singularity"], ["ghoul", "chucky"], ["huntress", "krasue"]]
+      ]
     },
     {
       "name": "Group E",
-      "killers": ["freddy", "mastermind", "unknown", "darklord", "nemesis", "doctor"]
+      "killers": ["freddy", "mastermind", "unknown", "darklord", "nemesis", "doctor"],
+      "rounds": [
+        [["freddy", "doctor"], ["mastermind", "unknown"], ["darklord", "nemesis"]],
+        [["freddy", "mastermind"], ["unknown", "darklord"], ["nemesis", "doctor"]],
+        [["freddy", "unknown"], ["mastermind", "nemesis"], ["darklord", "doctor"]],
+        [["freddy", "darklord"], ["mastermind", "doctor"], ["unknown", "nemesis"]],
+        [["freddy", "nemesis"], ["mastermind", "darklord"], ["unknown", "doctor"]]
+      ]
     },
     {
       "name": "Group F",
-      "killers": ["nurse", "pig", "oni", "lich", "onryo", "first"]
+      "killers": ["nurse", "pig", "oni", "lich", "onryo", "first"],
+      "rounds": [
+        [["nurse", "pig"], ["oni", "lich"], ["onryo", "first"]],
+        [["nurse", "first"], ["pig", "oni"], ["lich", "onryo"]],
+        [["nurse", "oni"], ["pig", "onryo"], ["lich", "first"]],
+        [["nurse", "lich"], ["pig", "first"], ["oni", "onryo"]],
+        [["nurse", "onryo"], ["pig", "lich"], ["oni", "first"]]
+      ]
     },
     {
       "name": "Group G",
-      "killers": ["billy", "myers", "legion", "demogorgon", "artist", "cannibal"]
+      "killers": ["billy", "myers", "legion", "demogorgon", "artist", "cannibal"],
+      "rounds": [
+        [["billy", "myers"], ["legion", "demogorgon"], ["artist", "cannibal"]],
+        [["billy", "cannibal"], ["myers", "legion"], ["demogorgon", "artist"]],
+        [["billy", "legion"], ["myers", "artist"], ["demogorgon", "cannibal"]],
+        [["billy", "demogorgon"], ["myers", "cannibal"], ["legion", "artist"]],
+        [["billy", "artist"], ["myers", "demogorgon"], ["legion", "cannibal"]]
+      ]
     }
   ],
   "results": [
@@ -125,28 +174,16 @@
     { "group": "Group G", "a": "demogorgon", "b": "artist", "aHooks": 12, "bHooks": 4, "video": "https://youtu.be/qxD0t40eo4w?si=ktokAYahPkiUj5JC&t=5104" },
     { "group": "Group G", "a": "artist", "b": "cannibal", "aHooks": 9, "bHooks": 12, "video": "https://youtu.be/0CoPcD6n5mY?si=JdYemx_1IvlOb6L-&t=10464" }
   ],
-  "knockout": [
-    {
-      "name": "Quarter-finals",
-      "matches": [
-        {},
-        {},
-        {},
-        {}
-      ]
-    },
-    {
-      "name": "Semi-finals",
-      "matches": [
-        {},
-        {}
-      ]
-    },
-    {
-      "name": "Final",
-      "matches": [
-        {}
-      ]
-    }
-  ]
+  "knockout": {
+    "seeds": [
+      ["best3:2", "Group A:1"],
+      ["best3:1", "Group B:1"],
+      ["Group G:2", "Group C:1"],
+      ["Group F:2", "Group D:1"],
+      ["Group D:2", "Group E:1"],
+      ["Group C:2", "Group F:1"],
+      ["Group B:2", "Group G:1"],
+      ["Group A:2", "Group E:2"]
+    ]
+  }
 }
