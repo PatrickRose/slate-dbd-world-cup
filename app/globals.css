@@ -5,6 +5,14 @@
   --foreground: #171717;
 }
 
+/* Extra breakpoint for the three-across group layout, sitting between `xl`
+   and `2xl`. It has to be declared in `rem` like Tailwind's own breakpoints,
+   otherwise it can't be sorted against them and its rules are emitted before
+   `lg:` — where they lose to it instead of overriding it. */
+@theme {
+  --breakpoint-wide: 87.5rem; /* 1400px */
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
