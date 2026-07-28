@@ -1,7 +1,15 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { buildGroupViews, getTournament, getYears } from "@/lib/tournament";
-import type { EditorModel } from "@/lib/editor";
+import {
+  buildGroupViews,
+  buildKnockout,
+  getTournament,
+  getYears,
+  groupFixtures,
+  pairingKey,
+  type SeedRef,
+} from "@/lib/tournament";
+import type { EditorModel, SeedOption } from "@/lib/editor";
 import { ScoreEditor } from "@/components/editor/ScoreEditor";
 
 /**
@@ -28,23 +36,45 @@ export default async function EditYearPage({
 
   if (!tournament) notFound();
 
-  // Fixtures come straight from the group views so the indices used as form
-  // field names match what the server action recomputes when it saves.
+  const groups = buildGroupViews(tournament);
+  const knockout = buildKnockout(tournament, groups);
+
   const model: EditorModel = {
     year: tournament.year,
     title: tournament.title,
-    killers: tournament.killers,
-    groups: buildGroupViews(tournament).map((group) => ({
+
+    groups: groups.map((group) => ({
       name: group.name,
-      fixtures: group.fixtures.map((fixture) => ({
-        a: fixture.a,
-        b: fixture.b,
-        aHooks: fixture.result?.aHooks,
-        bHooks: fixture.result?.bHooks,
-        video: fixture.result?.video,
+      rounds: group.rounds.map((round) =>
+        round.fixtures.map((f) => pairingKey(f.a.id, f.b.id)),
+      ),
+      unscheduled: group.unscheduled.map((f) => pairingKey(f.a.id, f.b.id)),
+      fixtures: groupFixtures(group).map((f) => ({
+        key: pairingKey(f.a.id, f.b.id),
+        a: f.a,
+        b: f.b,
+        aHooks: f.result?.aHooks,
+        bHooks: f.result?.bHooks,
+        video: f.result?.video,
       })),
     })),
-    knockout: tournament.knockout ?? [],
+
+    knockout: knockout.map((round, ri) => ({
+      name: round.name,
+      matches: round.matches.map((m, mi) => ({
+        round: ri + 1,
+        match: mi + 1,
+        aLabel: m.a.label,
+        bLabel: m.b.label,
+        aHooks: m.a.hooks,
+        bHooks: m.b.hooks,
+        video: m.video,
+        drawn: m.drawn,
+      })),
+    })),
+
+    seeds: tournament.knockout?.seeds ?? [],
+    seedOptions: seedOptions(tournament.groups.map((g) => g.name), tournament),
   };
 
   const years = getYears();
@@ -62,8 +92,8 @@ export default async function EditYearPage({
           Enter hooks and match links, then save to write{" "}
           <code className="font-mono">data/{tournament.year}.json</code>. Leave
           both hook boxes empty for a match that hasn&apos;t been played —
-          clearing them again removes the result. Standings are recalculated from
-          the file, so commit it when you&apos;re happy.
+          clearing them again removes the result. Drag a match by its handle to
+          move it to a different round.
         </p>
         <nav className="mt-4 flex flex-wrap items-center gap-2 text-sm">
           <a
@@ -89,4 +119,33 @@ export default async function EditYearPage({
       <ScoreEditor model={model} />
     </main>
   );
+}
+
+/**
+ * Every qualifying position a knockout seed can point at: each place that
+ * advances from each group, plus however many best-third-place slots are on
+ * offer this year.
+ */
+function seedOptions(
+  groupNames: string[],
+  t: { advancePerGroup?: number; bestThirdPlace?: number },
+): SeedOption[] {
+  const advance = t.advancePerGroup ?? 2;
+  const bestThirds = t.bestThirdPlace ?? 0;
+  const options: SeedOption[] = [];
+
+  for (const name of groupNames) {
+    for (let place = 1; place <= advance; place++) {
+      const ref: SeedRef = `${name}:${place}`;
+      options.push({
+        ref,
+        label: place === 1 ? `${name} winner` : `${name} #${place}`,
+      });
+    }
+  }
+  for (let n = 1; n <= bestThirds; n++) {
+    options.push({ ref: `best3:${n}`, label: `Best 3rd place #${n}` });
+  }
+
+  return options;
 }

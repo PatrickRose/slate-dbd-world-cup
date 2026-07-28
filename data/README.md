@@ -29,9 +29,20 @@ itself holds no year and no title: the heading is generated as
   ],
 
   // Each group lists its killers by id. Every pair plays once (round-robin);
-  // the fixtures are generated automatically, so you only enter results.
+  // the match-ups are generated automatically, so you only enter results.
   "groups": [
-    { "name": "Group B", "killers": ["trickster", "ghostie", "executioner"] }
+    {
+      "name": "Group B",
+      "killers": ["trickster", "clown", "ghostie", "wraith"],
+      // Which round each match is played in — one list per round. Optional:
+      // leave it out and a schedule is generated (see "Rounds" below). The
+      // editor writes this whenever you drag a match to another round.
+      "rounds": [
+        [["trickster", "clown"], ["ghostie", "wraith"]],
+        [["trickster", "ghostie"], ["clown", "wraith"]],
+        [["trickster", "wraith"], ["clown", "ghostie"]]
+      ]
+    }
   ],
 
   // One entry per match played. Omit matches that haven't happened yet —
@@ -49,24 +60,26 @@ itself holds no year and no title: the heading is generated as
     }
   ],
 
-  // Optional single-elimination bracket, earliest round first. Each round has
-  // any number of matches. A slot can be a killer id, or a placeholder label
-  // for a spot that isn't decided yet.
-  "knockout": [
-    {
-      "name": "Quarter-finals",
-      "matches": [
-        {
-          "a": "executioner",      // killer id, OR omit and use "aLabel"
-          "b": "doctor",
-          "aLabel": "Winner Group A", // shown when the killer isn't known yet
-          "aHooks": 12,            // omit both hooks until the match is played
-          "bHooks": 8,
-          "video": "https://youtu.be/VIDEO_ID?t=1234"
-        }
-      ]
-    }
-  ]
+  // Optional single-elimination bracket. You only say who plays whom in the
+  // first round, as qualifying *positions* — the rest of the bracket is built
+  // by advancing winners. See "Knockout bracket" below.
+  "knockout": {
+    "seeds": [
+      ["Group A:1", "best3:1"],   // Group A's winner v the best third-placed
+      ["Group B:1", "Group C:2"]  // Group B's winner v Group C's runner-up
+    ],
+    // One entry per knockout match played, addressed by its place in the
+    // bracket. Round 1 is the seeded round.
+    "scores": [
+      {
+        "round": 1,
+        "match": 2,
+        "aHooks": 12,   // hooks for the first slot of that match
+        "bHooks": 8,
+        "video": "https://youtu.be/VIDEO_ID?t=1234"
+      }
+    ]
+  }
 }
 ```
 
@@ -82,6 +95,51 @@ Computed automatically from `results`:
   it's decided, the row stays neutral. Qualification = top `advancePerGroup` per
   group plus the best `bestThirdPlace` third-placed killers overall.
 
+## Rounds
+
+Every pair in a group plays once, and those match-ups are split into rounds —
+one match per killer per round, the way Slate's spreadsheet columns are laid
+out. Rounds show as headings under each group's table on the year page.
+
+You don't have to write the schedule. Leave `rounds` out of a group and one is
+generated: the opening round pairs the killer list up two at a time (1v2, 3v4,
+5v6), and later rounds rotate from there. So the quickest way to make Round 1
+match the spreadsheet is to list a group's `killers` in the spreadsheet's order.
+
+Later rounds won't necessarily match — **drag a match to the round it actually
+belongs in** using the editor's handle, and the layout is written back here. Two
+things to know:
+
+- Which side of a match a killer is on doesn't matter anywhere. `["a", "b"]` and
+  `["b", "a"]` are the same match, and results are found either way round.
+- A match-up no round mentions isn't lost: it shows under "Not scheduled" on the
+  year page and as a bucket in the editor, so adding a killer to a group can
+  never drop matches. Empty rounds are discarded when saving.
+
+## Knockout bracket
+
+Only the first round is authored, as `knockout.seeds` — one pair of qualifying
+*positions* per match:
+
+- `"Group A:1"` is Group A's winner, `"Group A:2"` its runner-up, and so on up to
+  `advancePerGroup`.
+- `"best3:1"` is the best third-placed killer across all groups, `"best3:2"` the
+  next, up to `bestThirdPlace`.
+
+Everything else follows from the results:
+
+- A position resolves to a killer once that group has finished playing (and
+  `best3:*` once every group has, since it's ranked across all of them). Until
+  then the slot shows what it's waiting for — "Winner Group A", "Best 3rd place".
+- Each later round is half the size of the one before, filled by the winners
+  under it. Round names come from how many are left: Round of 16, Quarter-finals,
+  Semi-finals, Final.
+- A match level on hooks leaves the slot above it empty and says so, rather than
+  guessing who goes through. Replay it or nudge the hooks to settle it.
+
+Every position can only be seeded once, so the editor won't save a bracket with
+the same qualifier in two slots — swap the pair over instead.
+
 ## Entering results without editing JSON by hand
 
 Run the site locally and every year gets an editor at `/<year>/edit`:
@@ -92,23 +150,30 @@ npm run dev
 # (or use the dashed "Edit scores (local only)" link on the year page)
 ```
 
-It lists every group fixture with two hook boxes and a video link, plus a
-knockout section where you pick who filled each bracket slot. Hitting **Save**
-rewrites `data/<year>.json` in place, so review it with `git diff` and commit it
-like any other change.
+It lists every group match round by round, with two hook boxes and a video link
+each, then the knockout bracket. Hitting **Save** rewrites `data/<year>.json` in
+place, so review it with `git diff` and commit it like any other change.
 
 - Leave both hook boxes empty for a match that hasn't been played — clearing a
   score again deletes that result and the match goes back to being an upcoming
   fixture.
+- **Drag a match by its ⠿ handle** to move it between rounds, or to reorder one
+  within a round. Anything you've typed moves with it. "+ Add a round" makes room
+  at the end if you need to spread matches out further.
+- If a killer ends up twice in the same round the round says so — it's a warning,
+  not a block, so you can shuffle freely and fix it as you go.
+- The knockout's first-round slots are dropdowns of qualifying positions; later
+  rounds show who's coming through and just take the score. Slot names refresh
+  when you save.
 - A video link needs a score alongside it, and both hook boxes must be filled or
   both empty. The editor refuses to save and lists what to fix rather than
   writing a half-entered match.
-- Only `results` and `knockout` scores/slots are written. The killer list, the
-  groups, the bracket shape and its `aLabel` / `bLabel` placeholders stay
-  hand-authored here — as does creating the file for a brand new year.
+- The editor writes `groups[].rounds`, `results` and `knockout`. The killer list
+  and the group memberships stay hand-authored here — as does creating the file
+  for a brand new year.
 - Everything the editor doesn't own keeps its exact formatting, so diffs stay
-  small. The first save does normalise `results` into fixture order, with each
-  match written in the same killer order the tables use.
+  small. Results are written in schedule order, so a saved file reads round by
+  round.
 
 **The editor is local-only and never reaches the deployed site.** Its page file
 is `app/[year]/edit/page.dev.tsx`, and `next.config.ts` only registers the
@@ -135,5 +200,16 @@ All seven groups (A–G) and their killers were transcribed from Slate's
 spreadsheet — 42 killers across the groups. That's every current Dead by
 Daylight killer except **The Animatronic**, which sits out the tournament.
 
-Results are real and go in as the matches air. The knockout rounds are in place
-with empty matches, ready for slots and scores once the groups finish.
+Results are real and go in as the matches air.
+
+Each stream covers one round per group, three matches at a time, so **rounds 1
+and 2 of every group are taken from the videos** — the matches are grouped
+exactly as they were played. Rounds 3–5 are a generated completion of the
+round-robin; drag them into place as the real schedule is announced.
+
+16 qualify (7 group winners, 7 runners-up and the 2 best third-placed), making a
+Round of 16, seeded the way Slate set it up: the two best third-placed killers
+meet the winners of A and B, then runners-up pair off with winners from the other
+end of the alphabet — G's runner-up v C's winner, F's v D's, and so on. Because 7
+winners can't each face a runner-up when two of the sixteen slots go to
+third-placed killers, one match is runner-up v runner-up.

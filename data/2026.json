@@ -54,99 +54,136 @@
   "groups": [
     {
       "name": "Group A",
-      "killers": ["houndmaster", "skullmerchant", "xenomorph", "blight", "twins", "plague"]
+      "killers": ["houndmaster", "skullmerchant", "xenomorph", "blight", "twins", "plague"],
+      "rounds": [
+        [["houndmaster", "skullmerchant"], ["xenomorph", "blight"], ["twins", "plague"]],
+        [["houndmaster", "plague"], ["blight", "twins"], ["skullmerchant", "xenomorph"]],
+        [["xenomorph", "twins"], ["skullmerchant", "plague"], ["houndmaster", "blight"]],
+        [["houndmaster", "xenomorph"], ["blight", "plague"], ["skullmerchant", "twins"]],
+        [["houndmaster", "twins"], ["skullmerchant", "blight"], ["xenomorph", "plague"]]
+      ]
     },
     {
       "name": "Group B",
-      "killers": ["trickster", "ghostie", "executioner", "wraith", "clown", "hag"]
+      "killers": ["trickster", "ghostie", "executioner", "wraith", "clown", "hag"],
+      "rounds": [
+        [["trickster", "clown"], ["ghostie", "wraith"], ["executioner", "hag"]],
+        [["trickster", "executioner"], ["ghostie", "hag"], ["wraith", "clown"]],
+        [["wraith", "hag"], ["executioner", "clown"], ["trickster", "ghostie"]],
+        [["trickster", "wraith"], ["clown", "hag"], ["ghostie", "executioner"]],
+        [["trickster", "hag"], ["ghostie", "clown"], ["executioner", "wraith"]]
+      ]
     },
     {
       "name": "Group C",
-      "killers": ["spirit", "knight", "jason", "dredge", "slinger", "trapper"]
+      "killers": ["spirit", "knight", "jason", "dredge", "slinger", "trapper"],
+      "rounds": [
+        [["spirit", "trapper"], ["jason", "slinger"], ["knight", "dredge"]],
+        [["spirit", "knight"], ["jason", "dredge"], ["slinger", "trapper"]],
+        [["dredge", "slinger"], ["knight", "trapper"], ["spirit", "jason"]],
+        [["spirit", "slinger"], ["dredge", "trapper"], ["knight", "jason"]],
+        [["spirit", "dredge"], ["jason", "trapper"], ["knight", "slinger"]]
+      ]
     },
     {
       "name": "Group D",
-      "killers": ["krasue", "cenobite", "ghoul", "huntress", "chucky", "singularity"]
+      "killers": ["krasue", "cenobite", "ghoul", "huntress", "chucky", "singularity"],
+      "rounds": [
+        [["cenobite", "ghoul"], ["huntress", "chucky"], ["krasue", "singularity"]],
+        [["krasue", "cenobite"], ["chucky", "singularity"], ["ghoul", "huntress"]],
+        [["huntress", "singularity"], ["krasue", "ghoul"], ["cenobite", "chucky"]],
+        [["krasue", "chucky"], ["ghoul", "singularity"], ["cenobite", "huntress"]],
+        [["cenobite", "singularity"], ["ghoul", "chucky"], ["krasue", "huntress"]]
+      ]
     },
     {
       "name": "Group E",
-      "killers": ["freddy", "mastermind", "unknown", "darklord", "nemesis", "doctor"]
+      "killers": ["freddy", "mastermind", "unknown", "darklord", "nemesis", "doctor"],
+      "rounds": [
+        [["freddy", "mastermind"], ["unknown", "darklord"], ["nemesis", "doctor"]],
+        [["freddy", "doctor"], ["darklord", "nemesis"], ["mastermind", "unknown"]],
+        [["unknown", "nemesis"], ["mastermind", "doctor"], ["freddy", "darklord"]],
+        [["mastermind", "nemesis"], ["darklord", "doctor"], ["freddy", "unknown"]],
+        [["freddy", "nemesis"], ["mastermind", "darklord"], ["unknown", "doctor"]]
+      ]
     },
     {
       "name": "Group F",
-      "killers": ["nurse", "pig", "oni", "lich", "onryo", "first"]
+      "killers": ["nurse", "pig", "oni", "lich", "onryo", "first"],
+      "rounds": [
+        [["nurse", "pig"], ["oni", "lich"], ["onryo", "first"]],
+        [["nurse", "first"], ["lich", "onryo"], ["pig", "oni"]],
+        [["oni", "onryo"], ["pig", "first"], ["nurse", "lich"]],
+        [["pig", "onryo"], ["lich", "first"], ["nurse", "oni"]],
+        [["nurse", "onryo"], ["pig", "lich"], ["oni", "first"]]
+      ]
     },
     {
       "name": "Group G",
-      "killers": ["billy", "myers", "legion", "demogorgon", "artist", "cannibal"]
+      "killers": ["billy", "myers", "legion", "demogorgon", "artist", "cannibal"],
+      "rounds": [
+        [["billy", "myers"], ["legion", "demogorgon"], ["artist", "cannibal"]],
+        [["billy", "cannibal"], ["demogorgon", "artist"], ["myers", "legion"]],
+        [["legion", "artist"], ["myers", "cannibal"], ["billy", "demogorgon"]],
+        [["myers", "artist"], ["demogorgon", "cannibal"], ["billy", "legion"]],
+        [["billy", "artist"], ["myers", "demogorgon"], ["legion", "cannibal"]]
+      ]
     }
   ],
   "results": [
-    { "group": "Group A", "a": "houndmaster", "b": "skullmerchant", "aHooks": 12, "bHooks": 4, "video": "https://www.youtube.com/watch?v=0Rfj_ul_1Ko&t=882s" },
-    { "group": "Group A", "a": "houndmaster", "b": "plague", "aHooks": 8, "bHooks": 12, "video": "https://youtu.be/HZ8ux5phefg?si=REjHfpu_pTVGevdz&t=24" },
-    { "group": "Group A", "a": "skullmerchant", "b": "xenomorph", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/HZ8ux5phefg?si=y2dC-RRnNYPNkrAL&t=2582" },
+    { "group": "Group A", "a": "houndmaster", "b": "skullmerchant", "aHooks": 12, "bHooks": 4, "video": "https://www.youtube.com/watch?v=0Rfj_ul_1Ko" },
     { "group": "Group A", "a": "xenomorph", "b": "blight", "aHooks": 7, "bHooks": 4, "video": "https://youtu.be/0Rfj_ul_1Ko?si=oRR2vudlN2sIWkdq&t=1644" },
-    { "group": "Group A", "a": "blight", "b": "twins", "aHooks": 12, "bHooks": 4, "video": "https://youtu.be/HZ8ux5phefg?si=HO2NTtgO9ztYTUS2&t=1259" },
     { "group": "Group A", "a": "twins", "b": "plague", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/0Rfj_ul_1Ko?si=tEk4g6jNyOG6YAk2&t=3063" },
-    { "group": "Group B", "a": "trickster", "b": "executioner", "aHooks": 5, "bHooks": 3, "video": "https://youtu.be/HZ8ux5phefg?si=ANPrV_s65H36l8aD&t=3832" },
+    { "group": "Group A", "a": "houndmaster", "b": "plague", "aHooks": 8, "bHooks": 12, "video": "https://youtu.be/HZ8ux5phefg?si=REjHfpu_pTVGevdz&t=24" },
+    { "group": "Group A", "a": "blight", "b": "twins", "aHooks": 12, "bHooks": 4, "video": "https://youtu.be/HZ8ux5phefg?si=HO2NTtgO9ztYTUS2&t=1259" },
+    { "group": "Group A", "a": "skullmerchant", "b": "xenomorph", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/HZ8ux5phefg?si=y2dC-RRnNYPNkrAL&t=2582" },
     { "group": "Group B", "a": "trickster", "b": "clown", "aHooks": 12, "bHooks": 8, "video": "https://youtu.be/0Rfj_ul_1Ko?si=NWMroKrFF6hqcNgQ&t=4567" },
     { "group": "Group B", "a": "ghostie", "b": "wraith", "aHooks": 12, "bHooks": 11, "video": "https://youtu.be/0Rfj_ul_1Ko?si=yaW7k0ry1PD6G87g&t=5815" },
-    { "group": "Group B", "a": "ghostie", "b": "hag", "aHooks": 12, "bHooks": 5, "video": "https://youtu.be/HZ8ux5phefg?si=5RJnv1PMl2gpAoEH&t=4753" },
     { "group": "Group B", "a": "executioner", "b": "hag", "aHooks": 12, "bHooks": 6, "video": "https://youtu.be/0Rfj_ul_1Ko?si=mqRcLC88jW13mzHm&t=7265" },
+    { "group": "Group B", "a": "trickster", "b": "executioner", "aHooks": 5, "bHooks": 3, "video": "https://youtu.be/HZ8ux5phefg?si=ANPrV_s65H36l8aD&t=3832" },
+    { "group": "Group B", "a": "ghostie", "b": "hag", "aHooks": 12, "bHooks": 5, "video": "https://youtu.be/HZ8ux5phefg?si=5RJnv1PMl2gpAoEH&t=4753" },
     { "group": "Group B", "a": "wraith", "b": "clown", "aHooks": 11, "bHooks": 11, "video": "https://youtu.be/HZ8ux5phefg?si=1y75Or_n4hGPvNY4&t=6257" },
-    { "group": "Group C", "a": "spirit", "b": "knight", "aHooks": 12, "bHooks": 7, "video": "https://youtu.be/HZ8ux5phefg?si=B_hEYIwhqNUcRcKE&t=8032" },
     { "group": "Group C", "a": "spirit", "b": "trapper", "aHooks": 12, "bHooks": 4, "video": "https://youtu.be/a6RzbVeYgUA?si=us6UBgq2ts8kusHF&t=6" },
-    { "group": "Group C", "a": "knight", "b": "dredge", "aHooks": 12, "bHooks": 9, "video": "https://youtu.be/a6RzbVeYgUA?si=Pf5861gPm9-JYZCd" },
-    { "group": "Group C", "a": "jason", "b": "dredge", "aHooks": 6, "bHooks": 7, "video": "https://youtu.be/HZ8ux5phefg?si=a6anGjMGcD4u8cd6&t=9578" },
     { "group": "Group C", "a": "jason", "b": "slinger", "aHooks": 11, "bHooks": 6, "video": "https://youtu.be/a6RzbVeYgUA?si=FwA7rdXOUujf4c_f&t=1605" },
+    { "group": "Group C", "a": "knight", "b": "dredge", "aHooks": 12, "bHooks": 9, "video": "https://youtu.be/a6RzbVeYgUA?si=Pf5861gPm9-JYZCd" },
+    { "group": "Group C", "a": "spirit", "b": "knight", "aHooks": 12, "bHooks": 7, "video": "https://youtu.be/HZ8ux5phefg?si=B_hEYIwhqNUcRcKE&t=8032" },
+    { "group": "Group C", "a": "jason", "b": "dredge", "aHooks": 6, "bHooks": 7, "video": "https://youtu.be/HZ8ux5phefg?si=a6anGjMGcD4u8cd6&t=9578" },
     { "group": "Group C", "a": "slinger", "b": "trapper", "aHooks": 4, "bHooks": 12, "video": "https://youtu.be/HZ8ux5phefg?si=-ML3GuBjYTuA7_Ur&t=10909" },
-    { "group": "Group D", "a": "krasue", "b": "cenobite", "aHooks": 7, "bHooks": 4, "video": "https://youtu.be/M5MYTQxhZGg?si=7LWn9RXICJIZPViu&t=6" },
-    { "group": "Group D", "a": "krasue", "b": "singularity", "aHooks": 5, "bHooks": 10, "video": "https://youtu.be/a6RzbVeYgUA?si=-1Xb-SjyrnlqXGj-&t=6567" },
     { "group": "Group D", "a": "cenobite", "b": "ghoul", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/a6RzbVeYgUA?si=A-YQy8X5NVAm97lI&t=4143" },
-    { "group": "Group D", "a": "ghoul", "b": "huntress", "aHooks": 10, "bHooks": 4, "video": "https://youtu.be/M5MYTQxhZGg?si=VZSnSZhQyvBBskKa&t=2314" },
     { "group": "Group D", "a": "huntress", "b": "chucky", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/a6RzbVeYgUA?si=JujMKiPnFQyuDuyU&t=5326" },
+    { "group": "Group D", "a": "krasue", "b": "singularity", "aHooks": 5, "bHooks": 10, "video": "https://youtu.be/a6RzbVeYgUA?si=-1Xb-SjyrnlqXGj-&t=6567" },
+    { "group": "Group D", "a": "krasue", "b": "cenobite", "aHooks": 7, "bHooks": 4, "video": "https://youtu.be/M5MYTQxhZGg?si=7LWn9RXICJIZPViu&t=6" },
     { "group": "Group D", "a": "chucky", "b": "singularity", "aHooks": 5, "bHooks": 12, "video": "https://youtu.be/M5MYTQxhZGg?si=UZN-bEoXehXvTo5g&t=1115" },
+    { "group": "Group D", "a": "ghoul", "b": "huntress", "aHooks": 10, "bHooks": 4, "video": "https://youtu.be/M5MYTQxhZGg?si=VZSnSZhQyvBBskKa&t=2314" },
     { "group": "Group E", "a": "freddy", "b": "mastermind", "aHooks": 7, "bHooks": 7, "video": "https://www.youtube.com/watch?v=0CoPcD6n5mY" },
-    { "group": "Group E", "a": "freddy", "b": "doctor", "aHooks": 12, "bHooks": 11, "video": "https://youtu.be/M5MYTQxhZGg?si=16WX64aip35I-ytT&t=3710" },
-    { "group": "Group E", "a": "mastermind", "b": "unknown", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/M5MYTQxhZGg?si=_Ldop1DPj5lcTB_b&t=6615" },
     { "group": "Group E", "a": "unknown", "b": "darklord", "aHooks": 3, "bHooks": 11, "video": "https://youtu.be/0CoPcD6n5mY?si=cV9KmrbBljrQld2T&t=1213" },
-    { "group": "Group E", "a": "darklord", "b": "nemesis", "aHooks": 12, "bHooks": 8, "video": "https://youtu.be/M5MYTQxhZGg?si=9fgoxoY-lZcbtpL7&t=5216" },
     { "group": "Group E", "a": "nemesis", "b": "doctor", "aHooks": 12, "bHooks": 8, "video": "https://youtu.be/0CoPcD6n5mY?si=2BP9TxUtffQeNDeS&t=2293" },
+    { "group": "Group E", "a": "freddy", "b": "doctor", "aHooks": 12, "bHooks": 11, "video": "https://youtu.be/M5MYTQxhZGg?si=16WX64aip35I-ytT&t=3710" },
+    { "group": "Group E", "a": "darklord", "b": "nemesis", "aHooks": 12, "bHooks": 8, "video": "https://youtu.be/M5MYTQxhZGg?si=9fgoxoY-lZcbtpL7&t=5216" },
+    { "group": "Group E", "a": "mastermind", "b": "unknown", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/M5MYTQxhZGg?si=_Ldop1DPj5lcTB_b&t=6615" },
     { "group": "Group F", "a": "nurse", "b": "pig", "aHooks": 7, "bHooks": 12, "video": "https://youtu.be/0CoPcD6n5mY?si=CKSdqJpzCJIUl3ut&t=3484" },
-    { "group": "Group F", "a": "nurse", "b": "first", "aHooks": 2, "bHooks": 12, "video": "https://youtu.be/qxD0t40eo4w?si=f7z8BeVPCoZ0i7P8&t=11" },
-    { "group": "Group F", "a": "pig", "b": "oni", "aHooks": 11, "bHooks": 12, "video": "https://youtu.be/qxD0t40eo4w?si=lsz8YQt4o3hSkvfw&t=2400" },
     { "group": "Group F", "a": "oni", "b": "lich", "aHooks": 12, "bHooks": 7, "video": "https://youtu.be/0CoPcD6n5mY?si=B5HWcD59snIM-t0X&t=5210" },
-    { "group": "Group F", "a": "lich", "b": "onryo", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/qxD0t40eo4w?si=7bfGqwoUieJ-iALf&t=1042" },
     { "group": "Group F", "a": "onryo", "b": "first", "aHooks": 3, "bHooks": 12, "video": "https://youtu.be/0CoPcD6n5mY?si=BUy7hkra8tobJAr_&t=6652" },
+    { "group": "Group F", "a": "nurse", "b": "first", "aHooks": 2, "bHooks": 12, "video": "https://youtu.be/qxD0t40eo4w?si=f7z8BeVPCoZ0i7P8&t=11" },
+    { "group": "Group F", "a": "lich", "b": "onryo", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/qxD0t40eo4w?si=7bfGqwoUieJ-iALf&t=1042" },
+    { "group": "Group F", "a": "pig", "b": "oni", "aHooks": 11, "bHooks": 12, "video": "https://youtu.be/qxD0t40eo4w?si=lsz8YQt4o3hSkvfw&t=2400" },
     { "group": "Group G", "a": "billy", "b": "myers", "aHooks": 12, "bHooks": 9, "video": "https://youtu.be/0CoPcD6n5mY?si=V4rQaapJrHoP9TFB&t=7640" },
-    { "group": "Group G", "a": "billy", "b": "cannibal", "aHooks": 12, "bHooks": 11, "video": "https://youtu.be/qxD0t40eo4w?si=uueweQtyTaJ6Ik7m&t=3714" },
-    { "group": "Group G", "a": "myers", "b": "legion", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/qxD0t40eo4w?si=ItQ5RA-zh5vgqEo-&t=6535" },
     { "group": "Group G", "a": "legion", "b": "demogorgon", "aHooks": 12, "bHooks": 5, "video": "https://youtu.be/0CoPcD6n5mY?si=RmrF1QFiryDvjMAp&t=9162" },
+    { "group": "Group G", "a": "artist", "b": "cannibal", "aHooks": 9, "bHooks": 12, "video": "https://youtu.be/0CoPcD6n5mY?si=JdYemx_1IvlOb6L-&t=10464" },
+    { "group": "Group G", "a": "billy", "b": "cannibal", "aHooks": 12, "bHooks": 11, "video": "https://youtu.be/qxD0t40eo4w?si=uueweQtyTaJ6Ik7m&t=3714" },
     { "group": "Group G", "a": "demogorgon", "b": "artist", "aHooks": 12, "bHooks": 4, "video": "https://youtu.be/qxD0t40eo4w?si=ktokAYahPkiUj5JC&t=5104" },
-    { "group": "Group G", "a": "artist", "b": "cannibal", "aHooks": 9, "bHooks": 12, "video": "https://youtu.be/0CoPcD6n5mY?si=JdYemx_1IvlOb6L-&t=10464" }
+    { "group": "Group G", "a": "myers", "b": "legion", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/qxD0t40eo4w?si=ItQ5RA-zh5vgqEo-&t=6535" }
   ],
-  "knockout": [
-    {
-      "name": "Quarter-finals",
-      "matches": [
-        {},
-        {},
-        {},
-        {}
-      ]
-    },
-    {
-      "name": "Semi-finals",
-      "matches": [
-        {},
-        {}
-      ]
-    },
-    {
-      "name": "Final",
-      "matches": [
-        {}
-      ]
-    }
-  ]
+  "knockout": {
+    "seeds": [
+      ["best3:2", "Group A:1"],
+      ["best3:1", "Group B:1"],
+      ["Group G:2", "Group C:1"],
+      ["Group F:2", "Group D:1"],
+      ["Group E:2", "Group E:1"],
+      ["Group D:2", "Group F:1"],
+      ["Group C:2", "Group G:1"],
+      ["Group B:2", "Group A:2"]
+    ]
+  }
 }
