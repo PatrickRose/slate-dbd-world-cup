@@ -35,7 +35,7 @@ export default async function YearPage(props: PageProps<"/[year]">) {
   const years = getYears();
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+    <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12 wide:max-w-[92rem]">
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-red-600">
@@ -77,7 +77,10 @@ export default async function YearPage(props: PageProps<"/[year]">) {
         <span>Status is only shown once it&apos;s mathematically decided.</span>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* Three across once there's room for it: below the `wide` breakpoint a
+          third column squeezes the standings enough that names start to
+          truncate. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 wide:grid-cols-3">
         {groups.map((group) => (
           <GroupCard key={group.name} group={group} />
         ))}
