@@ -178,7 +178,10 @@ export async function saveTournament(
   const file = path.join(process.cwd(), "data", `${year}.json`);
   try {
     const original = fs.readFileSync(file, "utf8");
-    fs.writeFileSync(file, writeTournamentJson(original, { results, knockout }));
+    fs.writeFileSync(
+      file,
+      writeTournamentJson(original, { year, results, knockout }),
+    );
   } catch (error) {
     return {
       status: "error",

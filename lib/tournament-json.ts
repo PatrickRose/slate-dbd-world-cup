@@ -153,7 +153,7 @@ function serializeKnockout(rounds: KnockoutRound[]): string {
  */
 export function writeTournamentJson(
   original: string,
-  next: { results: Result[]; knockout?: KnockoutRound[] },
+  next: { year: number; results: Result[]; knockout?: KnockoutRound[] },
 ): string {
   const replacements = new Map<string, string>([
     ["results", serializeResults(next.results)],
@@ -162,10 +162,17 @@ export function writeTournamentJson(
     replacements.set("knockout", serializeKnockout(next.knockout));
   }
 
+  // The filename owns the year, so we only bring an existing `year` field back
+  // into line (e.g. after renaming 2025.json to 2026.json) — never add one.
+  const ifPresent = new Map<string, string>([["year", String(next.year)]]);
+
   const entries = splitTopLevel(original);
   const present = new Set(entries.map((e) => e.key));
   const lines = entries.map(
-    ({ key, raw }) => `${IND}${JSON.stringify(key)}: ${replacements.get(key) ?? raw}`,
+    ({ key, raw }) =>
+      `${IND}${JSON.stringify(key)}: ${
+        replacements.get(key) ?? ifPresent.get(key) ?? raw
+      }`,
   );
 
   // A section the file didn't have yet (e.g. the first ever result) gets added.

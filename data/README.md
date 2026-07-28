@@ -4,10 +4,17 @@ Each edition of the tournament is one JSON file named after its year, e.g.
 `2025.json`. Add a new file to add a new year — it shows up automatically in the
 year switcher, newest first. No database, no code changes needed.
 
+**The filename is what sets the year.** Renaming `2025.json` to `2026.json` moves
+the tournament to 2026, URL and all; the `"year"` inside the file is ignored (the
+local editor rewrites it to match on the next save). The `"title"` is free text,
+so update that yourself if it names the year.
+
 ## File shape
 
 ```jsonc
 {
+  // Optional, and ignored — the filename sets the year. Kept in files so they
+  // read standalone, and the local editor keeps it in step with the filename.
   "year": 2025,
   "title": "Slate DBD Killer World Cup 2025",
 

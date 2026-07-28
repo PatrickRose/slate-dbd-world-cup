@@ -66,6 +66,10 @@ export interface KnockoutRound {
 }
 
 export interface Tournament {
+  /**
+   * Taken from the data file's name, not its contents — `2026.json` is the 2026
+   * tournament, so renaming the file moves the edition. See `getTournament`.
+   */
   year: number;
   title: string;
   /** How many killers advance directly from each group. Defaults to 2. */
@@ -81,6 +85,14 @@ export interface Tournament {
   results: Result[];
   /** Optional single-elimination bracket after the group stage. */
   knockout?: KnockoutRound[];
+}
+
+/**
+ * A data file as authored on disk. `year` is optional because the filename is
+ * what counts; when it is present the local editor keeps it in step.
+ */
+export interface TournamentFile extends Omit<Tournament, "year"> {
+  year?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -168,7 +180,11 @@ export function getLatestYear(): number | undefined {
 export function getTournament(year: number): Tournament | undefined {
   const file = path.join(DATA_DIR, `${year}.json`);
   if (!fs.existsSync(file)) return undefined;
-  return JSON.parse(fs.readFileSync(file, "utf8")) as Tournament;
+  const data = JSON.parse(fs.readFileSync(file, "utf8")) as TournamentFile;
+  // The filename decides the year — every other lookup here (`getYears`, the
+  // route param, `generateStaticParams`) comes from it, so a `year` left over
+  // in the file from a rename would otherwise disagree with all of them.
+  return { ...data, year };
 }
 
 // ---------------------------------------------------------------------------
