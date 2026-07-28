@@ -4,19 +4,16 @@ Each edition of the tournament is one JSON file named after its year, e.g.
 `2025.json`. Add a new file to add a new year — it shows up automatically in the
 year switcher, newest first. No database, no code changes needed.
 
-**The filename is what sets the year.** Renaming `2025.json` to `2026.json` moves
-the tournament to 2026, URL and all; the `"year"` inside the file is ignored (the
-local editor rewrites it to match on the next save). The `"title"` is free text,
-so update that yourself if it names the year.
+**The filename is what sets the year.** Renaming `2026.json` to `2027.json` moves
+the tournament to 2027 — URL, year switcher and heading all follow. The file
+itself holds no year and no title: the heading is generated as
+`Slate DBD Killer World Cup <year>`, so a rename is the whole job.
 
 ## File shape
 
 ```jsonc
 {
-  // Optional, and ignored — the filename sets the year. Kept in files so they
-  // read standalone, and the local editor keeps it in step with the filename.
-  "year": 2025,
-  "title": "Slate DBD Killer World Cup 2025",
+  // No "year" or "title" — both come from the filename.
 
   // How many killers advance directly from each group. Defaults to 2.
   "advancePerGroup": 2,
@@ -91,7 +88,7 @@ Run the site locally and every year gets an editor at `/<year>/edit`:
 
 ```bash
 npm run dev
-# then open http://localhost:3000/2025/edit
+# then open http://localhost:3000/2026/edit
 # (or use the dashed "Edit scores (local only)" link on the year page)
 ```
 
@@ -132,14 +129,11 @@ The bundled avatars are the killers' official character portraits
 and stored 200×200 in `public/avatars/`. They're game art © Behaviour Interactive,
 used here for a non-commercial fan tracker. Swap in your own files any time.
 
-## About the seed `2025.json`
+## About `2026.json`
 
 All seven groups (A–G) and their killers were transcribed from Slate's
 spreadsheet — 42 killers across the groups. That's every current Dead by
 Daylight killer except **The Animatronic**, which sits out the tournament.
 
-The **match scores and the knockout bracket are placeholder examples** so the
-through/eliminated colouring, the YouTube links and the bracket are all visible —
-Group B is played out in full (giving green/red/neutral rows), and the knockout
-is a made-up run to a champion. Replace all of it, plus the placeholder `video`
-URL, with the real results.
+Results are real and go in as the matches air. The knockout rounds are in place
+with empty matches, ready for slots and scores once the groups finish.

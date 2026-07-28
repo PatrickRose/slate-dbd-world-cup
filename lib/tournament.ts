@@ -71,6 +71,7 @@ export interface Tournament {
    * tournament, so renaming the file moves the edition. See `getTournament`.
    */
   year: number;
+  /** Heading for the year, defaulting to `Slate DBD Killer World Cup <year>`. */
   title: string;
   /** How many killers advance directly from each group. Defaults to 2. */
   advancePerGroup?: number;
@@ -88,12 +89,11 @@ export interface Tournament {
 }
 
 /**
- * A data file as authored on disk. `year` is optional because the filename is
- * what counts; when it is present the local editor keeps it in step.
+ * A data file as authored on disk: everything except `year` and `title`, which
+ * are both derived from the filename. Naming the file is all it takes to start
+ * a new edition.
  */
-export interface TournamentFile extends Omit<Tournament, "year"> {
-  year?: number;
-}
+export type TournamentFile = Omit<Tournament, "year" | "title">;
 
 // ---------------------------------------------------------------------------
 // Derived / view models
@@ -181,10 +181,10 @@ export function getTournament(year: number): Tournament | undefined {
   const file = path.join(DATA_DIR, `${year}.json`);
   if (!fs.existsSync(file)) return undefined;
   const data = JSON.parse(fs.readFileSync(file, "utf8")) as TournamentFile;
-  // The filename decides the year — every other lookup here (`getYears`, the
-  // route param, `generateStaticParams`) comes from it, so a `year` left over
-  // in the file from a rename would otherwise disagree with all of them.
-  return { ...data, year };
+  // The filename is the only place the year lives — `getYears`, the route param
+  // and `generateStaticParams` all read it from there, so deriving the year and
+  // the heading here keeps every one of them in agreement after a rename.
+  return { ...data, year, title: `Slate DBD Killer World Cup ${year}` };
 }
 
 // ---------------------------------------------------------------------------
