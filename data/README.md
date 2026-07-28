@@ -78,6 +78,40 @@ Computed automatically from `results`:
   it's decided, the row stays neutral. Qualification = top `advancePerGroup` per
   group plus the best `bestThirdPlace` third-placed killers overall.
 
+## Entering results without editing JSON by hand
+
+Run the site locally and every year gets an editor at `/<year>/edit`:
+
+```bash
+npm run dev
+# then open http://localhost:3000/2025/edit
+# (or use the dashed "Edit scores (local only)" link on the year page)
+```
+
+It lists every group fixture with two hook boxes and a video link, plus a
+knockout section where you pick who filled each bracket slot. Hitting **Save**
+rewrites `data/<year>.json` in place, so review it with `git diff` and commit it
+like any other change.
+
+- Leave both hook boxes empty for a match that hasn't been played — clearing a
+  score again deletes that result and the match goes back to being an upcoming
+  fixture.
+- A video link needs a score alongside it, and both hook boxes must be filled or
+  both empty. The editor refuses to save and lists what to fix rather than
+  writing a half-entered match.
+- Only `results` and `knockout` scores/slots are written. The killer list, the
+  groups, the bracket shape and its `aLabel` / `bLabel` placeholders stay
+  hand-authored here — as does creating the file for a brand new year.
+- Everything the editor doesn't own keeps its exact formatting, so diffs stay
+  small. The first save does normalise `results` into fixture order, with each
+  match written in the same killer order the tables use.
+
+**The editor is local-only and never reaches the deployed site.** Its page file
+is `app/[year]/edit/page.dev.tsx`, and `next.config.ts` only registers the
+`dev.tsx` extension as a page outside production builds — so `next build`
+produces no `/[year]/edit` route, no editor JavaScript and no link to it. The
+save action also refuses to run if `NODE_ENV` is `production`.
+
 ## Avatars
 
 Optional. Drop an image in `public/avatars/` (e.g. `public/avatars/trickster.png`)

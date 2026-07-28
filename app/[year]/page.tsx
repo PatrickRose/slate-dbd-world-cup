@@ -49,7 +49,20 @@ export default async function YearPage(props: PageProps<"/[year]">) {
             Click a score to watch the match on YouTube.
           </p>
         </div>
-        <YearSwitcher years={years} current={tournament.year} />
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          <YearSwitcher years={years} current={tournament.year} />
+          {/* Local score editor. `process.env.NODE_ENV` is inlined at build
+              time, so this link — and the route it points at — are absent from
+              the deployed site. */}
+          {process.env.NODE_ENV !== "production" && (
+            <a
+              href={`/${tournament.year}/edit`}
+              className="rounded-full border border-dashed border-amber-500/60 px-3 py-1 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-500/10 dark:text-amber-400"
+            >
+              Edit scores (local only)
+            </a>
+          )}
+        </div>
       </header>
 
       <div className="mb-5 flex flex-wrap items-center gap-4 text-xs text-zinc-500">
