@@ -25,6 +25,12 @@ With the dev server running, each year also has a local-only score editor at
 `/<year>/edit` that writes that JSON for you; it isn't part of the deployed
 site.
 
+## Favicon
+
+`app/favicon.ico` is Slate's [Twitch](https://www.twitch.tv/Slate) profile
+picture, packed at 16, 32 and 48px. If the channel picture changes, rebuild it
+from the new image at those three sizes.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
