@@ -26,7 +26,7 @@ function Score({ fixture }: { fixture: Fixture }) {
         target="_blank"
         rel="noopener noreferrer"
         title="Hidden by spoiler mode — watch it, then tick the video off"
-        className="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-sm font-semibold text-red-600 ring-1 ring-red-600/40 ring-inset transition-colors hover:bg-red-600 hover:text-white hover:ring-transparent dark:text-red-400"
+        className="flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-1 text-sm font-semibold text-red-600 ring-1 ring-red-600/40 ring-inset transition-colors hover:bg-red-600 hover:text-white hover:ring-transparent dark:text-red-400"
       >
         <YouTubeIcon size={12} />
         Watch
@@ -41,7 +41,7 @@ function Score({ fixture }: { fixture: Fixture }) {
     return (
       <span
         title="Played, but no video is linked — hidden while spoiler mode is on"
-        className="spoiler-hatch rounded-md px-3 py-1 text-sm font-semibold text-zinc-500 ring-1 ring-black/10 ring-inset dark:text-zinc-400 dark:ring-white/15"
+        className="spoiler-hatch w-full rounded-md px-3 py-1 text-center text-sm font-semibold text-zinc-500 ring-1 ring-black/10 ring-inset dark:text-zinc-400 dark:ring-white/15"
       >
         Hidden
       </span>
@@ -50,7 +50,7 @@ function Score({ fixture }: { fixture: Fixture }) {
 
   if (!result) {
     return (
-      <span className="rounded-md px-3 py-1 text-sm font-medium text-zinc-400 dark:text-zinc-500">
+      <span className="w-full rounded-md px-3 py-1 text-center text-sm font-medium text-zinc-400 dark:text-zinc-500">
         vs
       </span>
     );
@@ -74,7 +74,7 @@ function Score({ fixture }: { fixture: Fixture }) {
         rel="noopener noreferrer"
         title="Watch this match on YouTube"
         data-spoilerable
-        className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-red-500"
+        className="flex w-full items-center justify-center gap-1.5 rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-red-500"
       >
         {label}
         <YouTubeIcon />
@@ -86,7 +86,7 @@ function Score({ fixture }: { fixture: Fixture }) {
     <span
       title="Result recorded — no video linked yet"
       data-spoilerable
-      className="rounded-md bg-zinc-200 px-3 py-1 text-sm font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
+      className="w-full rounded-md bg-zinc-200 px-3 py-1 text-center text-sm font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
     >
       {label}
     </span>
@@ -116,13 +116,14 @@ function HiddenBadge({ hidden }: { hidden: HiddenResults }) {
 
 function MatchRow({ fixture }: { fixture: Fixture }) {
   return (
-    <li className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-2.5 odd:bg-black/[.02] dark:odd:bg-white/[.02]">
+    // `grid-cols-subgrid`: the columns come from the round's `<ul>`, so the
+    // score column is sized once for the whole round — "7 – 4", "12 – 12" and
+    // "Watch" all end up the same width and the names either side line up.
+    <li className="col-span-3 grid grid-cols-subgrid items-center px-4 py-2.5 odd:bg-black/[.02] dark:odd:bg-white/[.02]">
       <div className="min-w-0 justify-self-end">
         <KillerChip killer={fixture.a} align="left" />
       </div>
-      <div className="justify-self-center">
-        <Score fixture={fixture} />
-      </div>
+      <Score fixture={fixture} />
       <div className="min-w-0 justify-self-start">
         <KillerChip killer={fixture.b} align="right" reverse />
       </div>
@@ -225,7 +226,7 @@ function MatchList({
       <h3 className="px-5 pt-3 pb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
         {title}
       </h3>
-      <ul>
+      <ul className="grid grid-cols-[1fr_auto_1fr] gap-x-3">
         {fixtures.map((f) => (
           <MatchRow key={`${f.a.id}-${f.b.id}`} fixture={f} />
         ))}
