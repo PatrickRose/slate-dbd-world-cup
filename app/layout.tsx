@@ -25,8 +25,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+    // `suppressHydrationWarning`: spoiler mode's pre-paint script sets
+    // `data-spoilers` on this element before React hydrates, and without this
+    // React would treat the attribute it didn't render as a mismatch.
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

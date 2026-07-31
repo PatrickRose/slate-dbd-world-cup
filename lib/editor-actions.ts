@@ -8,7 +8,6 @@ import {
   allPairings,
   buildGroupViews,
   buildKnockout,
-  getTournament,
   pairingKey,
   type Knockout,
   type KnockoutScore,
@@ -16,6 +15,7 @@ import {
   type Result,
   type SeedRef,
 } from "./tournament";
+import { getTournament } from "./tournament-data";
 import { writeTournamentJson } from "./tournament-json";
 
 /** Sentinel for "something was typed, but it isn't a valid hook count". */

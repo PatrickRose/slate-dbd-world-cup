@@ -140,6 +140,36 @@ Everything else follows from the results:
 Every position can only be seeded once, so the editor won't save a bracket with
 the same qualifier in two slots — swap the pair over instead.
 
+## Spoiler mode
+
+Viewers can turn on spoiler mode and tick off the videos they've watched; the
+page then shows the tournament **as it stood at those videos**. It works by
+filtering `results` (and `knockout.scores`) down to the matches whose video has
+been ticked, and everything else follows from that — standings shrink, nobody
+clinches early, and bracket slots go back to saying "Winner Group A".
+
+That makes the `video` field load-bearing in a way it wasn't before:
+
+- **A match is hidden until the video it's in is ticked.** Matches are grouped by
+  YouTube id, so all three matches on one stream reveal together — a timestamp
+  makes no difference to that.
+- **A result with no `video` can never be shown in spoiler mode.** There's
+  nothing to watch, so there's no way to have earned it. The row shows a hatched
+  "Hidden" marker instead of a score.
+- Because of that, a group holding an unlinked result never *completes* while
+  spoiler mode is on, so its qualifying positions stay unresolved — and since
+  `best3:*` ranks across every group, one unlinked result anywhere leaves the
+  best-third bracket slots unresolved too. If that starts to matter, the fix is
+  to add the video link, not to change the data.
+
+The video list is labelled from what each video covers ("Round 2 · Groups A–C ·
+9 matches"), derived from the results and the round layout — there's nothing to
+author. Videos are listed in playing order: group stage by round, then knockout.
+
+The preference lives in `localStorage` under `spoilers:<year>`, so it's per
+edition and per browser. Spoiler mode is **off by default**, and a visitor with
+JavaScript disabled gets the full page exactly as before.
+
 ## Entering results without editing JSON by hand
 
 Run the site locally and every year gets an editor at `/<year>/edit`:

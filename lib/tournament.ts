@@ -1,5 +1,12 @@
-import fs from "node:fs";
-import path from "node:path";
+/**
+ * Tournament shapes and every computation over them — standings, schedules,
+ * qualification and the knockout bracket.
+ *
+ * This module is deliberately free of filesystem access so it can be bundled
+ * into the browser: spoiler mode recomputes the tables client-side from a
+ * filtered result set. Reading `data/<year>.json` lives in
+ * `lib/tournament-data.ts`, which is server-only.
+ */
 
 // ---------------------------------------------------------------------------
 // Data shapes — these mirror the JSON files in /data. See data/README.md for
@@ -127,6 +134,23 @@ export interface Fixture {
   a: Killer;
   b: Killer;
   result?: Result;
+  /**
+   * Set only in spoiler mode: the match *has* been played, but the viewer
+   * hasn't watched the video it's in — so the score is kept back and the row
+   * offers the video instead. A withheld result with no `video` can never be
+   * revealed, since there's nothing to watch.
+   *
+   * `result` and `withheld` are mutually exclusive.
+   */
+  withheld?: Result;
+}
+
+/** How much of a group is being kept back in spoiler mode. */
+export interface HiddenResults {
+  /** Played, in a video the viewer hasn't ticked yet. */
+  behindVideo: number;
+  /** Played, with no video linked — hidden for good. */
+  noVideo: number;
 }
 
 /**
@@ -168,6 +192,12 @@ export interface GroupView {
    * killer to a group can't lose matches.
    */
   unscheduled: Fixture[];
+  /**
+   * Set only in spoiler mode (i.e. when `buildGroupViews` is given the
+   * unfiltered tournament to compare against), so the card can say how much of
+   * the table is missing rather than looking finished.
+   */
+  hidden?: HiddenResults;
 }
 
 /** One killer's slot within a knockout match. */
@@ -189,6 +219,12 @@ export interface KnockoutMatchView {
   played: boolean;
   /** Played, but level on hooks — so nobody advances yet. */
   drawn: boolean;
+  /**
+   * Spoiler mode: played, but its score is being kept back. `video` is still
+   * set if there's something to watch, so the card can offer the link without
+   * the hooks.
+   */
+  withheld?: boolean;
 }
 
 export interface KnockoutRoundView {
@@ -198,36 +234,6 @@ export interface KnockoutRoundView {
 
 const POINTS_WIN = 3;
 const POINTS_DRAW = 1;
-
-// ---------------------------------------------------------------------------
-// Loading
-// ---------------------------------------------------------------------------
-
-const DATA_DIR = path.join(process.cwd(), "data");
-
-/** All tournament years available, newest first. */
-export function getYears(): number[] {
-  const files = fs.existsSync(DATA_DIR)
-    ? fs.readdirSync(DATA_DIR).filter((f) => /^\d{4}\.json$/.test(f))
-    : [];
-  return files
-    .map((f) => parseInt(f.replace(".json", ""), 10))
-    .sort((x, y) => y - x);
-}
-
-export function getLatestYear(): number | undefined {
-  return getYears()[0];
-}
-
-export function getTournament(year: number): Tournament | undefined {
-  const file = path.join(DATA_DIR, `${year}.json`);
-  if (!fs.existsSync(file)) return undefined;
-  const data = JSON.parse(fs.readFileSync(file, "utf8")) as TournamentFile;
-  // The filename is the only place the year lives — `getYears`, the route param
-  // and `generateStaticParams` all read it from there, so deriving the year and
-  // the heading here keeps every one of them in agreement after a rename.
-  return { ...data, year, title: `Slate DBD Killer World Cup ${year}` };
-}
 
 // ---------------------------------------------------------------------------
 // Computation
@@ -316,19 +322,18 @@ export function groupFixtures(view: GroupView): Fixture[] {
   return [...view.rounds.flatMap((r) => r.fixtures), ...view.unscheduled];
 }
 
+/** Same result, sides swapped. */
+function flipResult(r: Result): Result {
+  return { ...r, a: r.b, b: r.a, aHooks: r.bHooks, bHooks: r.aHooks };
+}
+
 /** Same fixture, sides swapped. */
 function flipFixture(f: Fixture): Fixture {
-  const result = f.result;
   return {
     a: f.b,
     b: f.a,
-    result: result && {
-      ...result,
-      a: result.b,
-      b: result.a,
-      aHooks: result.bHooks,
-      bHooks: result.aHooks,
-    },
+    result: f.result && flipResult(f.result),
+    withheld: f.withheld && flipResult(f.withheld),
   };
 }
 
@@ -336,14 +341,26 @@ function flipFixture(f: Fixture): Fixture {
  * Turn raw tournament data into per-group views with computed standings and the
  * match-ups laid out into rounds. Standings are sorted by points, then total
  * hooks, then name — matching how Slate's spreadsheet ranks killers.
+ *
+ * `unfiltered` is how spoiler mode works: pass the full tournament alongside a
+ * filtered `t` and every match missing from `t` is looked up there, so the
+ * fixture can offer its video (`Fixture.withheld`) and the group can say how
+ * much it's holding back (`GroupView.hidden`). Everything else — standings,
+ * points, qualification — simply computes from the smaller result set, which is
+ * the whole trick: the page becomes the tournament as it stood at the last
+ * video the viewer watched.
  */
-export function buildGroupViews(t: Tournament): GroupView[] {
+export function buildGroupViews(
+  t: Tournament,
+  unfiltered?: Tournament,
+): GroupView[] {
   const killerById = new Map(t.killers.map((k) => [k.id, k]));
   const killer = (id: string): Killer =>
     killerById.get(id) ?? { id, name: id };
 
   const views: GroupView[] = t.groups.map((group) => {
     const ids = group.killers;
+    const hidden: HiddenResults = { behindVideo: 0, noVideo: 0 };
 
     // Seed a standings row per killer.
     const rows = new Map<string, StandingRow>(
@@ -364,6 +381,16 @@ export function buildGroupViews(t: Tournament): GroupView[] {
 
     const buildFixture = ([idA, idB]: Pairing): Fixture => {
       const result = findResult(t.results, group.name, idA, idB);
+
+      if (!result && unfiltered) {
+        const withheld = findResult(unfiltered.results, group.name, idA, idB);
+        if (withheld) {
+          if (withheld.video) hidden.behindVideo++;
+          else hidden.noVideo++;
+          return { a: killer(idA), b: killer(idB), withheld };
+        }
+      }
+
       if (result) {
         const rowA = rows.get(idA)!;
         const rowB = rows.get(idB)!;
@@ -420,7 +447,13 @@ export function buildGroupViews(t: Tournament): GroupView[] {
 
     const standings = [...rows.values()].sort(rankRows);
 
-    return { name: group.name, standings, rounds, unscheduled };
+    return {
+      name: group.name,
+      standings,
+      rounds,
+      unscheduled,
+      hidden: unfiltered ? hidden : undefined,
+    };
   });
 
   computeQualification(views, t);
@@ -592,12 +625,21 @@ function resolveSeed(
 export function buildKnockout(
   t: Tournament,
   groups: GroupView[],
+  unfiltered?: Tournament,
 ): KnockoutRoundView[] {
   const seeds = t.knockout?.seeds ?? [];
   if (seeds.length === 0) return [];
 
   const scoreAt = new Map(
     (t.knockout?.scores ?? []).map((s) => [`${s.round}.${s.match}`, s]),
+  );
+  // Spoiler mode: scores filtered out of `t` are still known about, so a match
+  // can offer its video without giving up the hooks. Seeds aren't filtered, so
+  // positions in the bracket line up between the two.
+  const withheldAt = new Map(
+    (unfiltered?.knockout?.scores ?? [])
+      .filter((s) => !scoreAt.has(`${s.round}.${s.match}`))
+      .map((s) => [`${s.round}.${s.match}`, s]),
   );
 
   const rounds: KnockoutRoundView[] = [];
@@ -614,15 +656,18 @@ export function buildKnockout(
     for (let m = 0; m < slots.length; m += 2) {
       const a = slots[m];
       const b = slots[m + 1];
-      const score = scoreAt.get(`${r + 1}.${m / 2 + 1}`);
+      const position = `${r + 1}.${m / 2 + 1}`;
+      const score = scoreAt.get(position);
+      const withheld = withheldAt.get(position);
       const played = score !== undefined;
       const aWins = played && score.aHooks > score.bHooks;
       const bWins = played && score.bHooks > score.aHooks;
 
       matches.push({
-        video: score?.video,
+        video: score?.video ?? withheld?.video,
         played,
         drawn: played && !aWins && !bWins,
+        withheld: withheld !== undefined,
         a: {
           killer: a.killer,
           label: a.killer?.name ?? a.label,

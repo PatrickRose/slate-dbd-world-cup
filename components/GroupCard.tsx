@@ -1,9 +1,11 @@
 import type {
   Fixture,
   GroupView,
+  HiddenResults,
   QualificationStatus,
 } from "@/lib/tournament";
 import { KillerChip } from "./KillerChip";
+import { YouTubeIcon } from "./YouTubeIcon";
 
 /** Row background tint by qualification status. */
 const STATUS_ROW: Record<QualificationStatus, string> = {
@@ -13,7 +15,38 @@ const STATUS_ROW: Record<QualificationStatus, string> = {
 };
 
 function Score({ fixture }: { fixture: Fixture }) {
-  const { result } = fixture;
+  const { result, withheld } = fixture;
+
+  // Spoiler mode: played, but the viewer hasn't watched the video it's in. Keep
+  // the link, drop the number — the row still says "there's something here".
+  if (withheld?.video) {
+    return (
+      <a
+        href={withheld.video}
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Hidden by spoiler mode — watch it, then tick the video off"
+        className="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-sm font-semibold text-red-600 ring-1 ring-red-600/40 ring-inset transition-colors hover:bg-red-600 hover:text-white hover:ring-transparent dark:text-red-400"
+      >
+        <YouTubeIcon size={12} />
+        Watch
+      </a>
+    );
+  }
+
+  // Played, but with no video linked there's nothing to watch and so no way to
+  // earn it. Marked rather than blanked, otherwise the row claims the match
+  // hasn't happened.
+  if (withheld) {
+    return (
+      <span
+        title="Played, but no video is linked — hidden while spoiler mode is on"
+        className="spoiler-hatch rounded-md px-3 py-1 text-sm font-semibold text-zinc-500 ring-1 ring-black/10 ring-inset dark:text-zinc-400 dark:ring-white/15"
+      >
+        Hidden
+      </span>
+    );
+  }
 
   if (!result) {
     return (
@@ -40,18 +73,11 @@ function Score({ fixture }: { fixture: Fixture }) {
         target="_blank"
         rel="noopener noreferrer"
         title="Watch this match on YouTube"
+        data-spoilerable
         className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1 text-sm font-semibold text-white transition-colors hover:bg-red-500"
       >
         {label}
-        <svg
-          viewBox="0 0 24 24"
-          width="14"
-          height="14"
-          fill="currentColor"
-          aria-hidden
-        >
-          <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8ZM9.5 15.6V8.4l6.3 3.6-6.3 3.6Z" />
-        </svg>
+        <YouTubeIcon />
       </a>
     );
   }
@@ -59,9 +85,31 @@ function Score({ fixture }: { fixture: Fixture }) {
   return (
     <span
       title="Result recorded — no video linked yet"
+      data-spoilerable
       className="rounded-md bg-zinc-200 px-3 py-1 text-sm font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
     >
       {label}
+    </span>
+  );
+}
+
+/** "6 hidden", with the two reasons split out in the tooltip. */
+function HiddenBadge({ hidden }: { hidden: HiddenResults }) {
+  const total = hidden.behindVideo + hidden.noVideo;
+  if (total === 0) return null;
+
+  const reasons = [
+    hidden.behindVideo > 0 &&
+      `${hidden.behindVideo} in videos you haven't ticked`,
+    hidden.noVideo > 0 && `${hidden.noVideo} with no video linked`,
+  ].filter(Boolean) as string[];
+
+  return (
+    <span
+      title={`${reasons.join(" · ")} — this table isn't final`}
+      className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[0.65rem] font-semibold tracking-wide text-amber-700 uppercase dark:text-amber-400"
+    >
+      {total} hidden
     </span>
   );
 }
@@ -85,8 +133,9 @@ function MatchRow({ fixture }: { fixture: Fixture }) {
 export function GroupCard({ group }: { group: GroupView }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900">
-      <h2 className="border-b border-black/10 bg-zinc-100 px-5 py-3 text-lg font-bold dark:border-white/10 dark:bg-zinc-800">
+      <h2 className="flex items-center justify-between gap-2 border-b border-black/10 bg-zinc-100 px-5 py-3 text-lg font-bold dark:border-white/10 dark:bg-zinc-800">
         {group.name}
+        {group.hidden && <HiddenBadge hidden={group.hidden} />}
       </h2>
 
       {/* Standings */}
@@ -117,7 +166,10 @@ export function GroupCard({ group }: { group: GroupView }) {
             </th>
           </tr>
         </thead>
-        <tbody>
+        {/* `data-spoilerable`: the order of these rows gives the group away just
+            as much as the numbers do, so the whole body stays invisible until
+            the client has recomputed it. See `app/globals.css`. */}
+        <tbody data-spoilerable>
           {group.standings.map((row, i) => (
             <tr
               key={row.killer.id}
@@ -146,7 +198,11 @@ export function GroupCard({ group }: { group: GroupView }) {
 
       {/* Matches, round by round */}
       {group.rounds.map((round) => (
-        <MatchList key={round.name} title={round.name} fixtures={round.fixtures} />
+        <MatchList
+          key={round.name}
+          title={round.name}
+          fixtures={round.fixtures}
+        />
       ))}
       {group.unscheduled.length > 0 && (
         <MatchList title="Not scheduled" fixtures={group.unscheduled} />
