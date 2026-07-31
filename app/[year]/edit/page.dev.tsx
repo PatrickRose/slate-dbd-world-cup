@@ -3,12 +3,11 @@ import type { Metadata } from "next";
 import {
   buildGroupViews,
   buildKnockout,
-  getTournament,
-  getYears,
   groupFixtures,
   pairingKey,
   type SeedRef,
 } from "@/lib/tournament";
+import { getTournament, getYears } from "@/lib/tournament-data";
 import type { EditorModel, SeedOption } from "@/lib/editor";
 import { ScoreEditor } from "@/components/editor/ScoreEditor";
 

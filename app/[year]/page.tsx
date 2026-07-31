@@ -1,13 +1,8 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import {
-  buildGroupViews,
-  buildKnockout,
-  getTournament,
-  getYears,
-} from "@/lib/tournament";
-import { GroupCard } from "@/components/GroupCard";
-import { Bracket } from "@/components/Bracket";
+import { getTournament, getYears } from "@/lib/tournament-data";
+import { buildVideoList, prepaintScript } from "@/lib/spoilers";
+import { YearBoard } from "@/components/YearBoard";
 import { YearSwitcher } from "@/components/YearSwitcher";
 
 export function generateStaticParams() {
@@ -30,12 +25,19 @@ export default async function YearPage(props: PageProps<"/[year]">) {
 
   if (!tournament) notFound();
 
-  const groups = buildGroupViews(tournament);
-  const knockout = buildKnockout(tournament, groups);
   const years = getYears();
+  const videos = buildVideoList(tournament);
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12 wide:max-w-[92rem]">
+      {/* Spoiler mode's anti-flash. This runs while the browser is still parsing
+          the page, so if spoiler mode is on the results below are hidden before
+          anything is painted — `YearBoard` lifts the mask once it has rebuilt
+          the tables for this viewer. See `lib/spoilers.ts`. */}
+      <script
+        dangerouslySetInnerHTML={{ __html: prepaintScript(tournament.year) }}
+      />
+
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-red-600">
@@ -65,28 +67,21 @@ export default async function YearPage(props: PageProps<"/[year]">) {
         </div>
       </header>
 
-      <div className="mb-5 flex flex-wrap items-center gap-4 text-xs text-zinc-500">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block size-3 rounded-sm bg-green-200 dark:bg-green-500/30" />
-          Through
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block size-3 rounded-sm bg-red-200 dark:bg-red-500/25" />
-          Eliminated
-        </span>
-        <span>Status is only shown once it&apos;s mathematically decided.</span>
-      </div>
-
-      {/* Three across once there's room for it: below the `wide` breakpoint a
-          third column squeezes the standings enough that names start to
-          truncate. */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 wide:grid-cols-3">
-        {groups.map((group) => (
-          <GroupCard key={group.name} group={group} />
-        ))}
-      </div>
-
-      <Bracket rounds={knockout} />
+      <YearBoard tournament={tournament} videos={videos}>
+        <div className="mb-5 flex flex-wrap items-center gap-4 text-xs text-zinc-500">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block size-3 rounded-sm bg-green-200 dark:bg-green-500/30" />
+            Through
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block size-3 rounded-sm bg-red-200 dark:bg-red-500/25" />
+            Eliminated
+          </span>
+          <span>
+            Status is only shown once it&apos;s mathematically decided.
+          </span>
+        </div>
+      </YearBoard>
     </main>
   );
 }

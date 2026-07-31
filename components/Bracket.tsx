@@ -4,11 +4,16 @@ import type {
   KnockoutSideView,
 } from "@/lib/tournament";
 import { Avatar } from "./Avatar";
+import { YouTubeIcon } from "./YouTubeIcon";
 
 function Side({ side, played }: { side: KnockoutSideView; played: boolean }) {
   const lost = played && !side.winner;
   return (
+    // `data-spoiler-tint` / `data-spoilerable`: who's in the slot and who won it
+    // are both spoilers, so they're neutralised until the client has rebuilt the
+    // bracket for this viewer.
     <div
+      data-spoiler-tint={side.winner ? "" : undefined}
       className={`flex items-center justify-between gap-2 px-3 py-2 ${
         side.winner ? "bg-green-100/70 font-semibold dark:bg-green-500/15" : ""
       }`}
@@ -23,9 +28,14 @@ function Side({ side, played }: { side: KnockoutSideView; played: boolean }) {
         ) : (
           <span className="inline-block size-[22px] shrink-0 rounded-full border border-dashed border-zinc-300 dark:border-zinc-600" />
         )}
-        <span className="truncate text-sm">{side.label}</span>
+        <span
+          className="truncate text-sm"
+          data-spoilerable={side.killer ? "" : undefined}
+        >
+          {side.label}
+        </span>
       </span>
-      <span className="shrink-0 text-sm tabular-nums">
+      <span className="shrink-0 text-sm tabular-nums" data-spoilerable>
         {typeof side.hooks === "number" ? side.hooks : "–"}
       </span>
     </div>
@@ -43,16 +53,30 @@ function MatchCard({ match }: { match: KnockoutMatchView }) {
           Level on hooks — no one through
         </p>
       )}
+      {/* Played, hidden, and nothing to watch: same dead end as an unlinked
+          group match, so it's marked rather than left looking unplayed. */}
+      {match.withheld && !match.video && (
+        <p className="spoiler-hatch border-t border-black/5 px-3 py-1 text-center text-xs font-semibold text-zinc-500 dark:border-white/10 dark:text-zinc-400">
+          Hidden — no video linked
+        </p>
+      )}
       {match.video && (
         <a
           href={match.video}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 border-t border-black/10 bg-red-600 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-500 dark:border-white/10"
+          title={
+            match.withheld
+              ? "Hidden by spoiler mode — watch it, then tick the video off"
+              : undefined
+          }
+          className={
+            match.withheld
+              ? "flex items-center justify-center gap-1.5 border-t border-black/10 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-600 hover:text-white dark:border-white/10 dark:text-red-400"
+              : "flex items-center justify-center gap-1.5 border-t border-black/10 bg-red-600 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-500 dark:border-white/10"
+          }
         >
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden>
-            <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-5.8ZM9.5 15.6V8.4l6.3 3.6-6.3 3.6Z" />
-          </svg>
+          <YouTubeIcon size={12} />
           Watch
         </a>
       )}
@@ -63,7 +87,8 @@ function MatchCard({ match }: { match: KnockoutMatchView }) {
 /** Find the champion (winner of the final match), if it has been decided. */
 function champion(rounds: KnockoutRoundView[]): KnockoutSideView | undefined {
   const finalRound = rounds[rounds.length - 1];
-  const finalMatch = finalRound?.matches.length === 1 ? finalRound.matches[0] : undefined;
+  const finalMatch =
+    finalRound?.matches.length === 1 ? finalRound.matches[0] : undefined;
   if (!finalMatch?.played || finalMatch.drawn) return undefined;
   return finalMatch.a.winner ? finalMatch.a : finalMatch.b;
 }
@@ -97,7 +122,10 @@ export function Bracket({ rounds }: { rounds: KnockoutRoundView[] }) {
       </div>
 
       {winner?.killer && (
-        <div className="mt-6 flex items-center justify-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-6 py-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+        <div
+          data-spoilerable
+          className="mt-6 flex items-center justify-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-6 py-4 dark:border-amber-500/30 dark:bg-amber-500/10"
+        >
           <span className="text-2xl">🏆</span>
           <Avatar killer={winner.killer} size={40} />
           <div>

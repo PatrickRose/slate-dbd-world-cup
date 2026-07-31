@@ -32,3 +32,34 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Spoiler mode, before the page is painted.
+ *
+ * `data-spoilers="on"` is set by the inline script the year page renders (see
+ * `lib/spoilers.ts`) while the HTML is still being parsed. The server has
+ * already rendered every result, so until the client rebuilds the tables from
+ * the videos this viewer has watched, anything that gives a result away stays
+ * invisible. `YearBoard` removes the attribute once it has.
+ *
+ * `visibility` rather than `display`, so hidden cells keep their size and the
+ * tables don't reflow when the numbers arrive. These rules are unlayered on
+ * purpose — that's what lets them beat the Tailwind utility classes setting
+ * those backgrounds. */
+html[data-spoilers="on"] [data-spoilerable] {
+  visibility: hidden;
+}
+
+html[data-spoilers="on"] [data-spoiler-tint] {
+  background-color: transparent;
+}
+
+/* Diagonal hatching for "played, and you can't have it": a result with no video
+ * linked, which spoiler mode can never reveal. Derived from `currentColor` so it
+ * works on either theme without a second rule. */
+.spoiler-hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, currentColor 20%, transparent) 0 4px,
+    transparent 4px 8px
+  );
+}

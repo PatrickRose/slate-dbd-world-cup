@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getLatestYear } from "@/lib/tournament";
+import { getLatestYear } from "@/lib/tournament-data";
 
 export default function Home() {
   const latest = getLatestYear();
