@@ -188,6 +188,9 @@
     { "group": "Group E", "a": "unknown", "b": "nemesis", "aHooks": 12, "bHooks": 11, "video": "https://youtu.be/z7MTPqwIZao?si=TYyPtLw_II1ihhMP&t=4473" },
     { "group": "Group E", "a": "mastermind", "b": "doctor", "aHooks": 2, "bHooks": 12, "video": "https://youtu.be/z7MTPqwIZao?si=g2xCfRfQj2koxA9-&t=6155" },
     { "group": "Group E", "a": "freddy", "b": "darklord", "aHooks": 12, "bHooks": 4, "video": "https://youtu.be/z7MTPqwIZao?si=Gh9fvxMO0mfV2KkO&t=7406" },
+    { "group": "Group E", "a": "mastermind", "b": "nemesis", "aHooks": 11, "bHooks": 12, "video": "https://www.youtube.com/watch?v=ZH-3aSlWPew" },
+    { "group": "Group E", "a": "darklord", "b": "doctor", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/ZH-3aSlWPew?si=UOm_85iLfw43Fhnf&t=1584" },
+    { "group": "Group E", "a": "freddy", "b": "unknown", "aHooks": 12, "bHooks": 10, "video": "https://youtu.be/ZH-3aSlWPew?si=RnmRSeXKBH89uEcf&t=2779" },
     { "group": "Group F", "a": "nurse", "b": "pig", "aHooks": 7, "bHooks": 12, "video": "https://youtu.be/0CoPcD6n5mY?si=CKSdqJpzCJIUl3ut&t=3484" },
     { "group": "Group F", "a": "oni", "b": "lich", "aHooks": 12, "bHooks": 7, "video": "https://youtu.be/0CoPcD6n5mY?si=B5HWcD59snIM-t0X&t=5210" },
     { "group": "Group F", "a": "onryo", "b": "first", "aHooks": 3, "bHooks": 12, "video": "https://youtu.be/0CoPcD6n5mY?si=BUy7hkra8tobJAr_&t=6652" },
@@ -197,6 +200,9 @@
     { "group": "Group F", "a": "oni", "b": "onryo", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/z7MTPqwIZao?si=bhOUL1LR2pwhYztC&t=8956" },
     { "group": "Group F", "a": "pig", "b": "first", "aHooks": 4, "bHooks": 11, "video": "https://youtu.be/z7MTPqwIZao?si=LRqgzDovkMGwqMvO&t=10813" },
     { "group": "Group F", "a": "nurse", "b": "lich", "aHooks": 7, "bHooks": 12, "video": "https://youtu.be/z7MTPqwIZao?si=tjxi-KJRyL2opNp3&t=12278" },
+    { "group": "Group F", "a": "pig", "b": "onryo", "aHooks": 12, "bHooks": 8, "video": "https://youtu.be/ZH-3aSlWPew?si=eFHqRdWqhTC_ydYl&t=4232" },
+    { "group": "Group F", "a": "lich", "b": "first", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/ZH-3aSlWPew?si=lZJUHLRiOdj8JSDf&t=5571" },
+    { "group": "Group F", "a": "nurse", "b": "oni", "aHooks": 12, "bHooks": 10, "video": "https://youtu.be/ZH-3aSlWPew?si=lns-J1FwvaPCXmA6&t=6848" },
     { "group": "Group G", "a": "billy", "b": "myers", "aHooks": 12, "bHooks": 9, "video": "https://youtu.be/0CoPcD6n5mY?si=V4rQaapJrHoP9TFB&t=7640" },
     { "group": "Group G", "a": "legion", "b": "demogorgon", "aHooks": 12, "bHooks": 5, "video": "https://youtu.be/0CoPcD6n5mY?si=RmrF1QFiryDvjMAp&t=9162" },
     { "group": "Group G", "a": "artist", "b": "cannibal", "aHooks": 9, "bHooks": 12, "video": "https://youtu.be/0CoPcD6n5mY?si=JdYemx_1IvlOb6L-&t=10464" },
@@ -205,7 +211,10 @@
     { "group": "Group G", "a": "myers", "b": "legion", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/qxD0t40eo4w?si=ItQ5RA-zh5vgqEo-&t=6535" },
     { "group": "Group G", "a": "legion", "b": "artist", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/z7MTPqwIZao?si=qeQPOZCL1UFpxmKs&t=13836" },
     { "group": "Group G", "a": "myers", "b": "cannibal", "aHooks": 9, "bHooks": 10, "video": "https://youtu.be/z7MTPqwIZao?si=x3O7GMZoCusEjp4b&t=15289" },
-    { "group": "Group G", "a": "billy", "b": "demogorgon", "aHooks": 5, "bHooks": 5, "video": "https://youtu.be/z7MTPqwIZao?si=wCTaaI8Guz0xVTZm&t=16582" }
+    { "group": "Group G", "a": "billy", "b": "demogorgon", "aHooks": 5, "bHooks": 5, "video": "https://youtu.be/z7MTPqwIZao?si=wCTaaI8Guz0xVTZm&t=16582" },
+    { "group": "Group G", "a": "myers", "b": "artist", "aHooks": 1, "bHooks": 6, "video": "https://youtu.be/ZH-3aSlWPew?si=iABoeYEXo1Nb7Hma&t=8536" },
+    { "group": "Group G", "a": "demogorgon", "b": "cannibal", "aHooks": 12, "bHooks": 4, "video": "https://youtu.be/ZH-3aSlWPew?si=2x8BgCcl6_3hVX8z&t=9519" },
+    { "group": "Group G", "a": "billy", "b": "legion", "aHooks": 12, "bHooks": 8, "video": "https://youtu.be/ZH-3aSlWPew?si=o64nCJs-psEdOk5d&t=10835" }
   ],
   "knockout": {
     "seeds": [
