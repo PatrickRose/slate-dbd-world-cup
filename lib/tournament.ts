@@ -480,9 +480,9 @@ function rankRows(x: StandingRow, y: StandingRow): number {
  * Statuses are only assigned when they are mathematically certain:
  * - `through`: a killer has clinched a direct top-N spot, or the whole group
  *   stage is complete and they qualify.
- * - `eliminated`: so many rivals in their group are already guaranteed above
- *   them that they cannot even reach the lowest qualifying position — this
- *   fires mid-group as soon as it becomes impossible, or at completion.
+ * - `eliminated`: no way the group's remaining matches can fall leaves them in
+ *   a qualifying position — this fires mid-group as soon as it becomes
+ *   impossible, or at completion. See `canStillQualify`.
  * - `contention`: everything still undecided.
  */
 function computeQualification(views: GroupView[], t: Tournament): void {
@@ -516,9 +516,14 @@ function computeQualification(views: GroupView[], t: Tournament): void {
   // Provisional, but only certainties are marked.
   for (const v of views) {
     const games = v.standings.length - 1; // round-robin games per killer
+    // Match-ups still to be played — in spoiler mode that includes the ones
+    // being kept back, which is the point: the table is the tournament as it
+    // stood, so an unwatched match is an unplayed one.
+    const remainingFixtures: Pairing[] = groupFixtures(v)
+      .filter((f) => !f.result)
+      .map((f) => [f.a.id, f.b.id]);
+
     for (const row of v.standings) {
-      const remaining = Math.max(0, games - row.played);
-      const maxPoints = row.points + POINTS_WIN * remaining;
       const others = v.standings.filter((o) => o !== row);
 
       // Rivals who could still finish at or above this killer's floor.
@@ -526,18 +531,100 @@ function computeQualification(views: GroupView[], t: Tournament): void {
         const oRemaining = Math.max(0, games - o.played);
         return o.points + POINTS_WIN * oRemaining >= row.points;
       }).length;
-      // Rivals already guaranteed to finish strictly above this killer.
-      const guaranteedAbove = others.filter((o) => o.points > maxPoints).length;
 
       if (canOvertake <= advance - 1) {
         row.status = "through"; // clinched a direct spot
-      } else if (guaranteedAbove >= qualifyingDepth) {
+      } else if (
+        !canStillQualify(row, others, remainingFixtures, qualifyingDepth)
+      ) {
         row.status = "eliminated"; // can't reach any qualifying position
       } else {
         row.status = "contention";
       }
     }
   }
+}
+
+/**
+ * How many outcomes the elimination search will look at before giving up. A
+ * group's remaining matches branch three ways each, so an untouched group is
+ * far too big to walk — but nobody is eliminated that early anyway, and the
+ * search prunes hard once enough rivals are clear, so by the time elimination
+ * is actually in question it finishes well inside this.
+ */
+const ELIMINATION_SEARCH_BUDGET = 50_000;
+
+/**
+ * Can `row` still reach a qualifying position — i.e. finish in the group's top
+ * `depth`?
+ *
+ * Best case for the killer in question: they win everything they have left, so
+ * they finish on `maxPoints` and their remaining opponents take nothing off
+ * them. What's left to settle is the matches *between* their rivals, and those
+ * can't all go quietly — every one of them hands points to somebody. Walking
+ * those outcomes is what catches the case a per-killer comparison misses: two
+ * rivals sitting level with you still have to play each other, so one of them
+ * is certain to pull clear.
+ *
+ * Returns true as soon as one set of outcomes leaves fewer than `depth` rivals
+ * ahead. Rivals level on points count as *behind*: hooks settle those, and it's
+ * better to leave a killer in contention than to eliminate one who could still
+ * take a tie-break.
+ */
+function canStillQualify(
+  row: StandingRow,
+  others: StandingRow[],
+  remaining: Pairing[],
+  depth: number,
+): boolean {
+  const id = row.killer.id;
+  const maxPoints =
+    row.points +
+    POINTS_WIN * remaining.filter((p) => p[0] === id || p[1] === id).length;
+
+  // Rivals' points as they stand — a floor, since points only ever go up.
+  const points = new Map(others.map((o) => [o.killer.id, o.points]));
+  let ahead = [...points.values()].filter((p) => p > maxPoints).length;
+  if (ahead >= depth) return false;
+
+  const award = (killerId: string, gain: number): void => {
+    const before = points.get(killerId)!;
+    points.set(killerId, before + gain);
+    if (before <= maxPoints && before + gain > maxPoints) ahead++;
+  };
+  const revoke = (killerId: string, gain: number): void => {
+    const after = points.get(killerId)!;
+    points.set(killerId, after - gain);
+    if (after - gain <= maxPoints && after > maxPoints) ahead--;
+  };
+
+  // Only rival-v-rival matches are open; this killer's own are wins already.
+  const open = remaining.filter((p) => p[0] !== id && p[1] !== id);
+  const outcomes: Array<[number, number]> = [
+    [POINTS_WIN, 0],
+    [0, POINTS_WIN],
+    [POINTS_DRAW, POINTS_DRAW],
+  ];
+  let budget = ELIMINATION_SEARCH_BUDGET;
+
+  const search = (i: number): boolean => {
+    if (ahead >= depth) return false; // dead branch: points never come back off
+    if (i === open.length) return true; // a way through
+    if (budget-- <= 0) return true; // gave up looking — stay in contention
+
+    const [x, y] = open[i];
+    for (const [gainX, gainY] of outcomes) {
+      award(x, gainX);
+      award(y, gainY);
+      const survives = search(i + 1);
+      revoke(x, gainX);
+      revoke(y, gainY);
+      if (survives) return true;
+    }
+    return false;
+  };
+
+  return search(0);
 }
 
 /** How a seed reads before it's known: `"Group A:1"` → "Winner Group A". */
