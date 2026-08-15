@@ -480,17 +480,15 @@ function rankRows(x: StandingRow, y: StandingRow): number {
  * Statuses are only assigned when they are mathematically certain:
  * - `through`: a killer has clinched a direct top-N spot, or the whole group
  *   stage is complete and they qualify.
- * - `eliminated`: no way the group's remaining matches can fall leaves them in
- *   a qualifying position — this fires mid-group as soon as it becomes
- *   impossible, or at completion. See `canStillQualify`.
+ * - `eliminated`: neither route to qualifying is open any more — they can't
+ *   reach the group's top N (see `canStillQualify`), and the best-third-place
+ *   route is shut too (see `canWinBestThird`). This fires mid-group as soon as
+ *   it becomes impossible, or at completion.
  * - `contention`: everything still undecided.
  */
 function computeQualification(views: GroupView[], t: Tournament): void {
   const advance = t.advancePerGroup ?? 2;
   const bestThirds = t.bestThirdPlace ?? 0;
-  // Lowest group position that could still lead to qualifying (0-indexed):
-  // top N directly, plus one more row if any best-third places are on offer.
-  const qualifyingDepth = advance + (bestThirds > 0 ? 1 : 0);
 
   const allComplete = views.every((v) =>
     groupFixtures(v).every((f) => f.result !== undefined),
@@ -513,15 +511,23 @@ function computeQualification(views: GroupView[], t: Tournament): void {
     return;
   }
 
+  // Match-ups still to be played, per group — in spoiler mode that includes the
+  // ones being kept back, which is the point: the table is the tournament as it
+  // stood, so an unwatched match is an unplayed one. Every group's is needed up
+  // front, since the best-third route is judged against the other groups.
+  const remainingByGroup = new Map<string, Pairing[]>(
+    views.map((v) => [
+      v.name,
+      groupFixtures(v)
+        .filter((f) => !f.result)
+        .map((f): Pairing => [f.a.id, f.b.id]),
+    ]),
+  );
+
   // Provisional, but only certainties are marked.
   for (const v of views) {
     const games = v.standings.length - 1; // round-robin games per killer
-    // Match-ups still to be played — in spoiler mode that includes the ones
-    // being kept back, which is the point: the table is the tournament as it
-    // stood, so an unwatched match is an unplayed one.
-    const remainingFixtures: Pairing[] = groupFixtures(v)
-      .filter((f) => !f.result)
-      .map((f) => [f.a.id, f.b.id]);
+    const remainingFixtures = remainingByGroup.get(v.name)!;
 
     for (const row of v.standings) {
       const others = v.standings.filter((o) => o !== row);
@@ -534,22 +540,85 @@ function computeQualification(views: GroupView[], t: Tournament): void {
 
       if (canOvertake <= advance - 1) {
         row.status = "through"; // clinched a direct spot
-      } else if (
-        !canStillQualify(row, others, remainingFixtures, qualifyingDepth)
-      ) {
-        row.status = "eliminated"; // can't reach any qualifying position
-      } else {
-        row.status = "contention";
+        continue;
       }
+
+      // Two ways to qualify, and a killer is only out once both are shut: the
+      // group's top `advance` directly, or the row below it plus a good enough
+      // showing against the other groups' third-placed killers.
+      const directRoute = canStillQualify(
+        row,
+        others,
+        remainingFixtures,
+        advance,
+      );
+      const thirdRoute =
+        !directRoute &&
+        bestThirds > 0 &&
+        canStillQualify(row, others, remainingFixtures, advance + 1) &&
+        canWinBestThird(
+          maxPoints(row, remainingFixtures),
+          v,
+          views,
+          remainingByGroup,
+          advance,
+          bestThirds,
+        );
+
+      row.status = directRoute || thirdRoute ? "contention" : "eliminated";
     }
   }
+}
+
+/**
+ * Could a killer whose ceiling is `ceiling` points still take one of the
+ * `bestThirds` slots on offer to third-placed killers?
+ *
+ * Only the other groups matter: each sends exactly one killer — whoever ends up
+ * `advance + 1` places down — to be ranked against ours. A group's third-placed
+ * killer finishes above `ceiling` precisely when `advance + 1` of its killers
+ * do, so the question for each group is whether its remaining matches can
+ * possibly leave that many below the ceiling. If they can't, that group is
+ * certain to send someone better and one of the slots is spoken for.
+ *
+ * Level on points counts in our killer's favour, as everywhere else here: hooks
+ * settle those, so a group is only written off as out of reach when its third
+ * place is *strictly* above the ceiling however its matches fall.
+ */
+function canWinBestThird(
+  ceiling: number,
+  ownGroup: GroupView,
+  views: GroupView[],
+  remainingByGroup: Map<string, Pairing[]>,
+  advance: number,
+  bestThirds: number,
+): boolean {
+  let spoken = 0;
+  for (const v of views) {
+    if (v === ownGroup) continue;
+    // A group too small to have a third place never sends anybody.
+    if (v.standings.length <= advance) continue;
+    const open = remainingByGroup.get(v.name) ?? [];
+    if (!canKeepBelow(v.standings, open, ceiling, advance + 1)) spoken++;
+    if (spoken >= bestThirds) return false;
+  }
+  return true;
+}
+
+/** Most points a killer can still finish on — they win everything they have left. */
+function maxPoints(row: StandingRow, remaining: Pairing[]): number {
+  const id = row.killer.id;
+  return (
+    row.points +
+    POINTS_WIN * remaining.filter((p) => p[0] === id || p[1] === id).length
+  );
 }
 
 /**
  * How many outcomes the elimination search will look at before giving up. A
  * group's remaining matches branch three ways each, so an untouched group is
  * far too big to walk — but nobody is eliminated that early anyway, and the
- * search prunes hard once enough rivals are clear, so by the time elimination
+ * search prunes hard once enough killers are clear, so by the time elimination
  * is actually in question it finishes well inside this.
  */
 const ELIMINATION_SEARCH_BUDGET = 50_000;
@@ -561,15 +630,13 @@ const ELIMINATION_SEARCH_BUDGET = 50_000;
  * Best case for the killer in question: they win everything they have left, so
  * they finish on `maxPoints` and their remaining opponents take nothing off
  * them. What's left to settle is the matches *between* their rivals, and those
- * can't all go quietly — every one of them hands points to somebody. Walking
+ * can't all go quietly — every one of them hands points to somebody. Searching
  * those outcomes is what catches the case a per-killer comparison misses: two
  * rivals sitting level with you still have to play each other, so one of them
  * is certain to pull clear.
  *
- * Returns true as soon as one set of outcomes leaves fewer than `depth` rivals
- * ahead. Rivals level on points count as *behind*: hooks settle those, and it's
- * better to leave a killer in contention than to eliminate one who could still
- * take a tie-break.
+ * Their own matches drop out of the search for free: `canKeepBelow` only walks
+ * matches between the killers it is given, and this killer isn't one of them.
  */
 function canStillQualify(
   row: StandingRow,
@@ -577,29 +644,45 @@ function canStillQualify(
   remaining: Pairing[],
   depth: number,
 ): boolean {
-  const id = row.killer.id;
-  const maxPoints =
-    row.points +
-    POINTS_WIN * remaining.filter((p) => p[0] === id || p[1] === id).length;
+  return canKeepBelow(others, remaining, maxPoints(row, remaining), depth);
+}
 
-  // Rivals' points as they stand — a floor, since points only ever go up.
-  const points = new Map(others.map((o) => [o.killer.id, o.points]));
-  let ahead = [...points.values()].filter((p) => p > maxPoints).length;
+/**
+ * Is there a way the matches still to be played can fall that leaves fewer than
+ * `depth` of `rows` finishing strictly above `threshold` points?
+ *
+ * Only matches between two of `rows` are searched — anything else on the list
+ * involves a killer whose points aren't being tracked, so it can't change the
+ * count either way.
+ *
+ * Points as they stand are a floor, since they only ever go up, and killers
+ * level on `threshold` count as *below* it: hooks settle those, and every
+ * caller would rather leave a killer in contention than rule out one who could
+ * still take a tie-break. The search gives up in favour of "yes" if it runs
+ * long, so it can only ever under-call.
+ */
+function canKeepBelow(
+  rows: StandingRow[],
+  remaining: Pairing[],
+  threshold: number,
+  depth: number,
+): boolean {
+  const points = new Map(rows.map((o) => [o.killer.id, o.points]));
+  let ahead = [...points.values()].filter((p) => p > threshold).length;
   if (ahead >= depth) return false;
 
   const award = (killerId: string, gain: number): void => {
     const before = points.get(killerId)!;
     points.set(killerId, before + gain);
-    if (before <= maxPoints && before + gain > maxPoints) ahead++;
+    if (before <= threshold && before + gain > threshold) ahead++;
   };
   const revoke = (killerId: string, gain: number): void => {
     const after = points.get(killerId)!;
     points.set(killerId, after - gain);
-    if (after - gain <= maxPoints && after > maxPoints) ahead--;
+    if (after - gain <= threshold && after > threshold) ahead--;
   };
 
-  // Only rival-v-rival matches are open; this killer's own are wins already.
-  const open = remaining.filter((p) => p[0] !== id && p[1] !== id);
+  const open = remaining.filter((p) => points.has(p[0]) && points.has(p[1]));
   const outcomes: Array<[number, number]> = [
     [POINTS_WIN, 0],
     [0, POINTS_WIN],
