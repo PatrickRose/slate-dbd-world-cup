@@ -17,15 +17,18 @@ itself holds no year and no title: the heading is generated as
 
   // How many killers advance directly from each group. Defaults to 2.
   "advancePerGroup": 2,
-  // How many of the best third-placed killers (ranked across all groups by
-  // points then hooks) also advance. Defaults to 0.
+  // How many of the best third-placed killers (ranked across all groups the
+  // same way the standings rank them) also advance. Defaults to 0.
   "bestThirdPlace": 2,
 
   // Every killer that appears in any group this year.
   "killers": [
     // "id" is a stable slug used to reference the killer everywhere.
     // "avatar" is optional — see "Avatars" below.
-    { "id": "trickster", "name": "Trickster", "avatar": "/avatars/trickster.png" }
+    // "seeding" is optional: this killer's place on Slate's seeding table,
+    // 1 being the top seed. See "Seeding" below.
+    { "id": "trickster", "name": "Trickster", "avatar": "/avatars/trickster.png",
+      "seeding": 14 }
   ],
 
   // Each group lists its killers by id. Every pair plays once (round-robin);
@@ -88,12 +91,36 @@ itself holds no year and no title: the heading is generated as
 Computed automatically from `results`:
 
 - More hooks wins the match → **3 points**. A tie → **1 point each**.
-- Standings sort by points, then total hooks, then name.
+- Standings sort by points, then total hooks, then the seeding table (see
+  "Seeding").
 - **Through / eliminated** colouring is worked out mathematically: a killer turns
   green once they've clinched a qualifying place, and red once it's impossible
   for them to reach one (this can happen mid-group after enough losses). Until
   it's decided, the row stays neutral. Qualification = top `advancePerGroup` per
   group plus the best `bestThirdPlace` third-placed killers overall.
+
+## Seeding
+
+Slate seeds the killers before the tournament starts, and that table is the last
+word on any tie the table itself can't settle: level on points *and* level on
+hooks, the higher seed finishes above — and so takes the qualifying place, or
+the better third-placed ranking.
+
+Give each killer a `"seeding"`, 1 being the top seed:
+
+```jsonc
+{ "id": "huntress", "name": "Huntress", "avatar": "/avatars/huntress.webp", "seeding": 14 }
+```
+
+It doesn't have to be complete. A killer with no `"seeding"` ranks below every
+killer that has one, so the numbers you have are worth entering on their own,
+and filling in more later never renumbers what's already there. Where neither
+killer is seeded, name settles it — arbitrary, but at least stable.
+
+Nothing to do with `knockout.seeds`, which are bracket slots ("Group A:1").
+
+Leaving seeding out altogether is fine: ties then behave as they did before,
+with nobody counted as above anybody on one.
 
 ## Rounds
 

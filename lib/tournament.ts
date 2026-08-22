@@ -23,6 +23,15 @@ export interface Killer {
    * "/avatars/trickster.png". If omitted we fall back to a coloured initial.
    */
   avatar?: string;
+  /**
+   * Where this killer sits on Slate's seeding table, 1 being the top seed.
+   * Nothing to do with `Knockout.seeds`, which are bracket slots: this is the
+   * pre-tournament ranking, and it settles a tie that points and hooks both
+   * leave level. Optional, and it need not be complete — a killer without one
+   * ranks below every killer that has one, so you can fill the table in as
+   * much of it as you have.
+   */
+  seeding?: number;
 }
 
 /** A match-up, as a pair of killer ids. Which one is first doesn't matter. */
@@ -107,7 +116,8 @@ export interface Tournament {
   advancePerGroup?: number;
   /**
    * How many of the best third-placed killers (those just below the automatic
-   * cut, ranked across all groups by points then hooks) additionally advance.
+   * cut, ranked across all groups the way `rankRows` ranks anyone) additionally
+   * advance.
    * Defaults to 0.
    */
   bestThirdPlace?: number;
@@ -340,7 +350,8 @@ function flipFixture(f: Fixture): Fixture {
 /**
  * Turn raw tournament data into per-group views with computed standings and the
  * match-ups laid out into rounds. Standings are sorted by points, then total
- * hooks, then name — matching how Slate's spreadsheet ranks killers.
+ * hooks, then the seeding table — matching how Slate's spreadsheet ranks
+ * killers.
  *
  * `unfiltered` is how spoiler mode works: pass the full tournament alongside a
  * filtered `t` and every match missing from `t` is looked up there, so the
@@ -460,13 +471,26 @@ export function buildGroupViews(
   return views;
 }
 
-/** Standings sort order: points, then total hooks, then name. */
+/**
+ * Standings sort order: points, then total hooks, then seeding — the last of
+ * those being Slate's final tie-break. Name only settles two killers the
+ * seeding table doesn't rank, so the order is at least stable.
+ */
 function rankRows(x: StandingRow, y: StandingRow): number {
   return (
     y.points - x.points ||
     y.hooks - x.hooks ||
+    seedingOf(x.killer) - seedingOf(y.killer) ||
     x.killer.name.localeCompare(y.killer.name)
   );
+}
+
+/**
+ * A killer's place on the seeding table, as a number that sorts: 1 is the top
+ * seed, and anyone the table doesn't rank sits below everyone it does.
+ */
+function seedingOf(killer: Killer): number {
+  return killer.seeding ?? Number.POSITIVE_INFINITY;
 }
 
 /**
@@ -474,8 +498,8 @@ function rankRows(x: StandingRow, y: StandingRow): number {
  *
  * Qualification format: the top `advancePerGroup` of each group advance
  * directly, plus the best `bestThirdPlace` of the next-placed killers across
- * all groups (ranked by points then hooks) — the classic "best third-placed"
- * scheme.
+ * all groups (ranked by points, then hooks, then seeding) — the classic "best
+ * third-placed" scheme.
  *
  * Statuses are only assigned when they are mathematically certain:
  * - `through`: a killer has clinched a direct top-N spot, or the whole group
@@ -607,16 +631,18 @@ function canWinBestThird(
 
 /**
  * The best a killer can still finish on, as the standings rank them: the points
- * they reach by winning everything they have left, and their hooks as a
- * tie-break.
+ * they reach by winning everything they have left, then their hooks, then their
+ * seeding as the final tie-break.
  *
  * The hooks are only filled in once they have no matches left. Until then they
  * can climb without limit, so any tie on points is theirs for the taking and
- * there is no ceiling to compare against.
+ * there is no ceiling to compare against. Seeding never moves, so it is always
+ * known — but it only ever comes up once the hooks are level and settled.
  */
 interface Ceiling {
   points: number;
   hooks?: number;
+  seeding: number;
 }
 
 /** Where a killer's ceiling sits — they win everything they have left. */
@@ -626,6 +652,7 @@ function ceilingOf(row: StandingRow, remaining: Pairing[]): Ceiling {
   return {
     points: row.points + POINTS_WIN * left,
     hooks: left === 0 ? row.hooks : undefined,
+    seeding: seedingOf(row.killer),
   };
 }
 
@@ -671,12 +698,13 @@ function canStillQualify(
  * count either way.
  *
  * Points as they stand are a floor, since they only ever go up, and a tie on
- * points is broken the way the standings break it — on hooks, but only where
- * both sides' hooks have stopped moving. Anyone still playing counts as *below*
- * a tie, since they could out-hook the ceiling however the points fall, and
- * every caller would rather leave a killer in contention than rule out one who
- * could still take a tie-break. The search gives up in favour of "yes" if it
- * runs long, so it can only ever under-call.
+ * points is broken the way the standings break it — on hooks, and on the
+ * seeding table where the hooks are level too, but only where both sides' hooks
+ * have stopped moving. Anyone still playing counts as *below* a tie, since they
+ * could out-hook the ceiling however the points fall, and every caller would
+ * rather leave a killer in contention than rule out one who could still take a
+ * tie-break. The search gives up in favour of "yes" if it runs long, so it can
+ * only ever under-call.
  */
 function canKeepBelow(
   rows: StandingRow[],
@@ -684,20 +712,23 @@ function canKeepBelow(
   ceiling: Ceiling,
   depth: number,
 ): boolean {
-  // Whose hook count is settled, and beats the ceiling's. Fixed for the whole
-  // search: only points move as match-ups are played out below.
+  // Who takes the tie-break off the ceiling: their hooks are settled and beat
+  // it, or match it and their seeding is better. Fixed for the whole search —
+  // only points move as match-ups are played out below.
   const stillPlaying = new Set(remaining.flat());
-  const outHooks = new Map(
+  const winsTie = new Map(
     rows.map((o) => [
       o.killer.id,
       ceiling.hooks !== undefined &&
         !stillPlaying.has(o.killer.id) &&
-        o.hooks > ceiling.hooks,
+        (o.hooks > ceiling.hooks ||
+          (o.hooks === ceiling.hooks &&
+            seedingOf(o.killer) < ceiling.seeding)),
     ]),
   );
   /** Strictly above the ceiling on `pts` points: clear of it, or wins the tie. */
   const above = (killerId: string, pts: number): boolean =>
-    pts > ceiling.points || (pts === ceiling.points && outHooks.get(killerId)!);
+    pts > ceiling.points || (pts === ceiling.points && winsTie.get(killerId)!);
 
   const points = new Map(rows.map((o) => [o.killer.id, o.points]));
   let ahead = [...points].filter(([id, p]) => above(id, p)).length;

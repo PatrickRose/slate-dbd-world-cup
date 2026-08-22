@@ -3,8 +3,10 @@ import { Avatar } from "./Avatar";
 
 /**
  * A killer's small avatar + name. On hover it reveals an enlarged avatar
- * tooltip (pure CSS, no client JS). `align` controls which side the tooltip
- * anchors to so it never runs off the row.
+ * tooltip (pure CSS, no client JS), along with their seed where the year's data
+ * has one — it decides ties the standings columns leave level, so it wants to
+ * be findable somewhere. `align` controls which side the tooltip anchors to so
+ * it never runs off the row.
  */
 export function KillerChip({
   killer,
@@ -34,6 +36,11 @@ export function KillerChip({
         <span className="whitespace-nowrap text-xs font-semibold">
           {killer.name}
         </span>
+        {killer.seeding !== undefined && (
+          <span className="whitespace-nowrap text-[10px] text-zinc-500 dark:text-zinc-400">
+            Seed #{killer.seeding}
+          </span>
+        )}
       </span>
     </span>
   );
