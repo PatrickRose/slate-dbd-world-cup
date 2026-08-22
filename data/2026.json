@@ -178,7 +178,7 @@
     { "group": "Group C", "a": "knight", "b": "slinger", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/nYIJmq7idOY?si=Tb0581OVG4wjU7UW&t=11356" },
     { "group": "Group D", "a": "cenobite", "b": "ghoul", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/a6RzbVeYgUA?si=A-YQy8X5NVAm97lI&t=4143" },
     { "group": "Group D", "a": "huntress", "b": "chucky", "aHooks": 12, "bHooks": 12, "video": "https://youtu.be/a6RzbVeYgUA?si=JujMKiPnFQyuDuyU&t=5326" },
-    { "group": "Group D", "a": "krasue", "b": "singularity", "aHooks": 5, "bHooks": 10, "video": "https://youtu.be/a6RzbVeYgUA?si=-1Xb-SjyrnlqXGj-&t=6567" },
+    { "group": "Group D", "a": "krasue", "b": "singularity", "aHooks": 10, "bHooks": 5, "video": "https://youtu.be/a6RzbVeYgUA?si=-1Xb-SjyrnlqXGj-&t=6567" },
     { "group": "Group D", "a": "krasue", "b": "cenobite", "aHooks": 7, "bHooks": 4, "video": "https://youtu.be/M5MYTQxhZGg?si=7LWn9RXICJIZPViu&t=6" },
     { "group": "Group D", "a": "chucky", "b": "singularity", "aHooks": 5, "bHooks": 12, "video": "https://youtu.be/M5MYTQxhZGg?si=UZN-bEoXehXvTo5g&t=1115" },
     { "group": "Group D", "a": "ghoul", "b": "huntress", "aHooks": 10, "bHooks": 4, "video": "https://youtu.be/M5MYTQxhZGg?si=VZSnSZhQyvBBskKa&t=2314" },
