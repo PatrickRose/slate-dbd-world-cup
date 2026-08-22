@@ -557,7 +557,7 @@ function computeQualification(views: GroupView[], t: Tournament): void {
         bestThirds > 0 &&
         canStillQualify(row, others, remainingFixtures, advance + 1) &&
         canWinBestThird(
-          maxPoints(row, remainingFixtures),
+          ceilingOf(row, remainingFixtures),
           v,
           views,
           remainingByGroup,
@@ -581,12 +581,12 @@ function computeQualification(views: GroupView[], t: Tournament): void {
  * possibly leave that many below the ceiling. If they can't, that group is
  * certain to send someone better and one of the slots is spoken for.
  *
- * Level on points counts in our killer's favour, as everywhere else here: hooks
- * settle those, so a group is only written off as out of reach when its third
- * place is *strictly* above the ceiling however its matches fall.
+ * A group is only written off as out of reach when its third place is
+ * *strictly* above the ceiling however its matches fall — see `canKeepBelow`
+ * for when a tie on points counts as above it.
  */
 function canWinBestThird(
-  ceiling: number,
+  ceiling: Ceiling,
   ownGroup: GroupView,
   views: GroupView[],
   remainingByGroup: Map<string, Pairing[]>,
@@ -605,13 +605,28 @@ function canWinBestThird(
   return true;
 }
 
-/** Most points a killer can still finish on — they win everything they have left. */
-function maxPoints(row: StandingRow, remaining: Pairing[]): number {
+/**
+ * The best a killer can still finish on, as the standings rank them: the points
+ * they reach by winning everything they have left, and their hooks as a
+ * tie-break.
+ *
+ * The hooks are only filled in once they have no matches left. Until then they
+ * can climb without limit, so any tie on points is theirs for the taking and
+ * there is no ceiling to compare against.
+ */
+interface Ceiling {
+  points: number;
+  hooks?: number;
+}
+
+/** Where a killer's ceiling sits — they win everything they have left. */
+function ceilingOf(row: StandingRow, remaining: Pairing[]): Ceiling {
   const id = row.killer.id;
-  return (
-    row.points +
-    POINTS_WIN * remaining.filter((p) => p[0] === id || p[1] === id).length
-  );
+  const left = remaining.filter((p) => p[0] === id || p[1] === id).length;
+  return {
+    points: row.points + POINTS_WIN * left,
+    hooks: left === 0 ? row.hooks : undefined,
+  };
 }
 
 /**
@@ -628,12 +643,12 @@ const ELIMINATION_SEARCH_BUDGET = 50_000;
  * `depth`?
  *
  * Best case for the killer in question: they win everything they have left, so
- * they finish on `maxPoints` and their remaining opponents take nothing off
- * them. What's left to settle is the matches *between* their rivals, and those
- * can't all go quietly — every one of them hands points to somebody. Searching
- * those outcomes is what catches the case a per-killer comparison misses: two
- * rivals sitting level with you still have to play each other, so one of them
- * is certain to pull clear.
+ * they finish on their `ceilingOf` and their remaining opponents take nothing
+ * off them. What's left to settle is the matches *between* their rivals, and
+ * those can't all go quietly — every one of them hands points to somebody.
+ * Searching those outcomes is what catches the case a per-killer comparison
+ * misses: two rivals sitting level with you still have to play each other, so
+ * one of them is certain to pull clear.
  *
  * Their own matches drop out of the search for free: `canKeepBelow` only walks
  * matches between the killers it is given, and this killer isn't one of them.
@@ -644,42 +659,59 @@ function canStillQualify(
   remaining: Pairing[],
   depth: number,
 ): boolean {
-  return canKeepBelow(others, remaining, maxPoints(row, remaining), depth);
+  return canKeepBelow(others, remaining, ceilingOf(row, remaining), depth);
 }
 
 /**
  * Is there a way the matches still to be played can fall that leaves fewer than
- * `depth` of `rows` finishing strictly above `threshold` points?
+ * `depth` of `rows` finishing strictly above `ceiling`?
  *
  * Only matches between two of `rows` are searched — anything else on the list
  * involves a killer whose points aren't being tracked, so it can't change the
  * count either way.
  *
- * Points as they stand are a floor, since they only ever go up, and killers
- * level on `threshold` count as *below* it: hooks settle those, and every
- * caller would rather leave a killer in contention than rule out one who could
- * still take a tie-break. The search gives up in favour of "yes" if it runs
- * long, so it can only ever under-call.
+ * Points as they stand are a floor, since they only ever go up, and a tie on
+ * points is broken the way the standings break it — on hooks, but only where
+ * both sides' hooks have stopped moving. Anyone still playing counts as *below*
+ * a tie, since they could out-hook the ceiling however the points fall, and
+ * every caller would rather leave a killer in contention than rule out one who
+ * could still take a tie-break. The search gives up in favour of "yes" if it
+ * runs long, so it can only ever under-call.
  */
 function canKeepBelow(
   rows: StandingRow[],
   remaining: Pairing[],
-  threshold: number,
+  ceiling: Ceiling,
   depth: number,
 ): boolean {
+  // Whose hook count is settled, and beats the ceiling's. Fixed for the whole
+  // search: only points move as match-ups are played out below.
+  const stillPlaying = new Set(remaining.flat());
+  const outHooks = new Map(
+    rows.map((o) => [
+      o.killer.id,
+      ceiling.hooks !== undefined &&
+        !stillPlaying.has(o.killer.id) &&
+        o.hooks > ceiling.hooks,
+    ]),
+  );
+  /** Strictly above the ceiling on `pts` points: clear of it, or wins the tie. */
+  const above = (killerId: string, pts: number): boolean =>
+    pts > ceiling.points || (pts === ceiling.points && outHooks.get(killerId)!);
+
   const points = new Map(rows.map((o) => [o.killer.id, o.points]));
-  let ahead = [...points.values()].filter((p) => p > threshold).length;
+  let ahead = [...points].filter(([id, p]) => above(id, p)).length;
   if (ahead >= depth) return false;
 
   const award = (killerId: string, gain: number): void => {
     const before = points.get(killerId)!;
     points.set(killerId, before + gain);
-    if (before <= threshold && before + gain > threshold) ahead++;
+    if (!above(killerId, before) && above(killerId, before + gain)) ahead++;
   };
   const revoke = (killerId: string, gain: number): void => {
     const after = points.get(killerId)!;
     points.set(killerId, after - gain);
-    if (after - gain <= threshold && after > threshold) ahead--;
+    if (!above(killerId, after - gain) && above(killerId, after)) ahead--;
   };
 
   const open = remaining.filter((p) => points.has(p[0]) && points.has(p[1]));
