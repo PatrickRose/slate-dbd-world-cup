@@ -68,7 +68,10 @@ itself holds no year and no title: the heading is generated as
       ["Group A:1", "best3:1"],   // Group A's winner v the best third-placed
       ["Group B:1", "Group C:2"]  // Group B's winner v Group C's runner-up
     ],
-    // One entry per knockout match played, addressed by its place in the
+    // Rounds played as a series instead of one match, keyed by the round name
+    // shown on the bracket. Optional — every round is a one-off without it.
+    "bestOf": { "Final": 5 },
+    // One entry per knockout *game* played, addressed by its place in the
     // bracket. Round 1 is the seeded round.
     "scores": [
       {
@@ -76,6 +79,14 @@ itself holds no year and no title: the heading is generated as
         "match": 2,
         "aHooks": 12,   // hooks for the first slot of that match
         "bHooks": 8,
+        "video": "https://youtu.be/VIDEO_ID?t=1234"
+      },
+      {
+        "round": 3,
+        "match": 1,
+        "game": 2,      // only for a round listed in "bestOf"
+        "aHooks": 9,
+        "bHooks": 11,
         "video": "https://youtu.be/VIDEO_ID?t=1234"
       }
     ]
@@ -140,6 +151,39 @@ Everything else follows from the results:
 Every position can only be seeded once, so the editor won't save a bracket with
 the same qualifier in two slots — swap the pair over instead.
 
+### Best-of-five and other series
+
+A round can be played as a series rather than a single match. Name it in
+`knockout.bestOf`, keyed by the round name the bracket shows it under:
+
+```jsonc
+"bestOf": { "Final": 5 }   // the 2026 final is a best of five
+```
+
+Then each game gets its own entry in `scores`, numbered with `game`:
+
+```jsonc
+{ "round": 4, "match": 1, "game": 1, "aHooks": 9, "bHooks": 6, "video": "https://youtu.be/…" },
+{ "round": 4, "match": 1, "game": 2, "aHooks": 4, "bHooks": 8, "video": "https://youtu.be/…" }
+```
+
+- **More hooks wins a game; the first to win half the games plus one wins the
+  match** — three of five. Hooks decide each game and nothing else: a 3–0 sweep
+  beats a 3–2 win by the same amount, however the hooks fell.
+- **Games are played in order, and the series stops when it's won.** Anything
+  entered after that is a dead rubber and doesn't count towards the score. A gap
+  stops the count too, so a game recorded out of order won't skew the standings.
+- **A game level on hooks goes to nobody.** If every game is played and no one
+  has reached the target — 2–2 with one drawn, say — the match reads as played
+  out with nobody through, exactly like a level one-off match.
+- **Each game carries its own `video`**, so spoiler mode reveals a series game
+  by game: watch game 1 and the bracket says 1–0 with the rest held back. Games
+  released on one stream still tick off together, the same as group matches do.
+- A round name that no round answers to is ignored, so you can write
+  `"bestOf": { "Final": 5 }` before the bracket has a final in it.
+- Ordinary one-off matches are unchanged and keep writing their scores without a
+  `game` — a one-off is just a series of one.
+
 ## Spoiler mode
 
 Viewers can turn on spoiler mode and tick off the videos they've watched; the
@@ -152,7 +196,8 @@ That makes the `video` field load-bearing in a way it wasn't before:
 
 - **A match is hidden until the video it's in is ticked.** Matches are grouped by
   YouTube id, so all three matches on one stream reveal together — a timestamp
-  makes no difference to that.
+  makes no difference to that. A knockout series is ticked off game by game, so
+  a best-of-five final reveals as far as you've watched.
 - **A result with no `video` can never be shown in spoiler mode.** There's
   nothing to watch, so there's no way to have earned it. The row shows a hatched
   "Hidden" marker instead of a score.
@@ -194,7 +239,8 @@ place, so review it with `git diff` and commit it like any other change.
   not a block, so you can shuffle freely and fix it as you go.
 - The knockout's first-round slots are dropdowns of qualifying positions; later
   rounds show who's coming through and just take the score. Slot names refresh
-  when you save.
+  when you save. A round played as a series gets a row of boxes per game instead
+  of one, labelled with the two killers so it's clear which column is whose.
 - A video link needs a score alongside it, and both hook boxes must be filled or
   both empty. The editor refuses to save and lists what to fix rather than
   writing a half-entered match.
@@ -236,6 +282,10 @@ Each stream covers one round per group, three matches at a time, so **rounds 1
 and 2 of every group are taken from the videos** — the matches are grouped
 exactly as they were played. Rounds 3–5 are a generated completion of the
 round-robin; drag them into place as the real schedule is announced.
+
+**The final is a best of five** — first to three games — which is what
+`"bestOf": { "Final": 5 }` in the knockout says. Every other round is a single
+match.
 
 16 qualify (7 group winners, 7 runners-up and the 2 best third-placed), making a
 Round of 16, seeded the way Slate set it up: the two best third-placed killers

@@ -14,6 +14,7 @@ import {
   IDLE_SAVE_STATE,
   type EditorFixture,
   type EditorGroup,
+  type EditorKnockoutGame,
   type EditorKnockoutMatch,
   type EditorModel,
   type EditorRound,
@@ -237,6 +238,64 @@ function SeedSelect({
   );
 }
 
+/**
+ * One game's score and video link. A one-off match has a single one of these
+ * sitting inline with the two slots; a series stacks them under the pairing,
+ * labelled by game number.
+ */
+function KnockoutGameRow({
+  match,
+  game,
+  label,
+}: {
+  match: EditorKnockoutMatch;
+  game: EditorKnockoutGame;
+  /** Prefix for the accessible names, e.g. "Round 4 match 1". */
+  label: string;
+}) {
+  const name = `${label} game ${game.number}`;
+
+  return (
+    <li className="rounded-md border border-black/5 p-2 dark:border-white/10">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+          Game {game.number}
+        </span>
+        <span className="flex gap-1">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+            name={field.knockoutHooks(match.round, match.match, game.number, "a")}
+            defaultValue={game.aHooks ?? ""}
+            aria-label={`${name} — hooks for the first side`}
+            className={HOOKS_CLASS}
+          />
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+            name={field.knockoutHooks(match.round, match.match, game.number, "b")}
+            defaultValue={game.bHooks ?? ""}
+            aria-label={`${name} — hooks for the second side`}
+            className={HOOKS_CLASS}
+          />
+        </span>
+      </div>
+      <input
+        type="url"
+        name={field.knockoutVideo(match.round, match.match, game.number)}
+        defaultValue={game.video ?? ""}
+        aria-label={`${name} — video link`}
+        placeholder="https://youtu.be/…?t=123"
+        className={`${VIDEO_CLASS} mt-1.5`}
+      />
+    </li>
+  );
+}
+
 function KnockoutMatchCard({
   match,
   seed,
@@ -250,55 +309,70 @@ function KnockoutMatchCard({
   onSeedChange: (side: 0 | 1, ref: SeedRef) => void;
 }) {
   const label = `Round ${match.round} match ${match.match}`;
+  const series = match.bestOf > 1;
+  // A one-off keeps its score inline with the slots; a series can't, since
+  // every game needs its own pair of boxes.
+  const single = series ? undefined : match.games[0];
+
+  const slot = (side: 0 | 1) =>
+    seed ? (
+      <SeedSelect
+        value={seed[side]}
+        options={seedOptions}
+        label={`${label} — ${side === 0 ? "first" : "second"} qualifier`}
+        onChange={(ref) => onSeedChange(side, ref)}
+      />
+    ) : (
+      <span
+        className="truncate text-sm"
+        title={side === 0 ? match.aLabel : match.bLabel}
+      >
+        {side === 0 ? match.aLabel : match.bLabel}
+      </span>
+    );
 
   return (
     <div className="rounded-lg border border-black/10 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-zinc-900">
-      <div className="grid grid-cols-[1fr_auto] items-center gap-2">
-        {seed ? (
-          <SeedSelect
-            value={seed[0]}
-            options={seedOptions}
-            label={`${label} — first qualifier`}
-            onChange={(ref) => onSeedChange(0, ref)}
-          />
-        ) : (
-          <span className="truncate text-sm" title={match.aLabel}>
-            {match.aLabel}
-          </span>
-        )}
-        <input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          step={1}
-          name={field.knockoutHooks(match.round, match.match, "a")}
-          defaultValue={match.aHooks ?? ""}
-          aria-label={`${label} — hooks for the first side`}
-          className={HOOKS_CLASS}
-        />
+      {series && (
+        <p className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+          Best of {match.bestOf} · first to {Math.floor(match.bestOf / 2) + 1}
+        </p>
+      )}
 
-        {seed ? (
-          <SeedSelect
-            value={seed[1]}
-            options={seedOptions}
-            label={`${label} — second qualifier`}
-            onChange={(ref) => onSeedChange(1, ref)}
+      <div
+        className={
+          series
+            ? "grid grid-cols-1 gap-2"
+            : "grid grid-cols-[1fr_auto] items-center gap-2"
+        }
+      >
+        {slot(0)}
+        {single && (
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+            name={field.knockoutHooks(match.round, match.match, single.number, "a")}
+            defaultValue={single.aHooks ?? ""}
+            aria-label={`${label} — hooks for the first side`}
+            className={HOOKS_CLASS}
           />
-        ) : (
-          <span className="truncate text-sm" title={match.bLabel}>
-            {match.bLabel}
-          </span>
         )}
-        <input
-          type="number"
-          inputMode="numeric"
-          min={0}
-          step={1}
-          name={field.knockoutHooks(match.round, match.match, "b")}
-          defaultValue={match.bHooks ?? ""}
-          aria-label={`${label} — hooks for the second side`}
-          className={HOOKS_CLASS}
-        />
+
+        {slot(1)}
+        {single && (
+          <input
+            type="number"
+            inputMode="numeric"
+            min={0}
+            step={1}
+            name={field.knockoutHooks(match.round, match.match, single.number, "b")}
+            defaultValue={single.bHooks ?? ""}
+            aria-label={`${label} — hooks for the second side`}
+            className={HOOKS_CLASS}
+          />
+        )}
       </div>
 
       {seed && (
@@ -307,20 +381,50 @@ function KnockoutMatchCard({
         </p>
       )}
 
-      <div className="mt-2">
-        <input
-          type="url"
-          name={field.knockoutVideo(match.round, match.match)}
-          defaultValue={match.video ?? ""}
-          aria-label={`${label} — video link`}
-          placeholder="https://youtu.be/…?t=123"
-          className={VIDEO_CLASS}
-        />
-      </div>
+      {single ? (
+        <div className="mt-2">
+          <input
+            type="url"
+            name={field.knockoutVideo(match.round, match.match, single.number)}
+            defaultValue={single.video ?? ""}
+            aria-label={`${label} — video link`}
+            placeholder="https://youtu.be/…?t=123"
+            className={VIDEO_CLASS}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Which box is whose: the names sit above the columns, since a
+              series stacks them rather than putting each beside its own box. */}
+          <div className="mt-2 flex items-center justify-end gap-1 pr-2">
+            {[match.aLabel, match.bLabel].map((name, i) => (
+              <span
+                key={i}
+                title={name}
+                className="w-14 truncate text-center text-[10px] font-semibold uppercase tracking-wide text-zinc-400"
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+          <ul className="mt-1 flex flex-col gap-2">
+            {match.games.map((game) => (
+              <KnockoutGameRow
+                key={game.number}
+                match={match}
+                game={game}
+                label={label}
+              />
+            ))}
+          </ul>
+        </>
+      )}
 
       {match.drawn && (
         <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-          Level on hooks — nobody advances from this one.
+          {series
+            ? `All ${match.bestOf} games played and still level — nobody advances from this one.`
+            : "Level on hooks — nobody advances from this one."}
         </p>
       )}
     </div>
@@ -357,7 +461,8 @@ function KnockoutSection({
       <p className="mb-4 text-sm text-zinc-500">
         Pick which qualifying position fills each first-round slot; every later
         round fills itself from the winners as you enter hooks. Slot names update
-        when you save.
+        when you save. A round played as a series takes a score and a link per
+        game — leave the games that haven&apos;t been played empty.
       </p>
       <div className="overflow-x-auto pb-2">
         <div className="flex min-w-max gap-5">

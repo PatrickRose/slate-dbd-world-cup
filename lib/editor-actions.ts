@@ -255,32 +255,53 @@ export async function saveTournament(
 
     const scores: KnockoutScore[] = [];
     bracket.forEach((round, ri) => {
-      round.matches.forEach((_, mi) => {
+      round.matches.forEach((match, mi) => {
         const [roundNo, matchNo] = [ri + 1, mi + 1];
-        const label = `${round.name}, match ${matchNo}`;
-        const { aHooks, bHooks, video } = readMatch(
-          formData,
-          {
-            aHooks: field.knockoutHooks(roundNo, matchNo, "a"),
-            bHooks: field.knockoutHooks(roundNo, matchNo, "b"),
-            video: field.knockoutVideo(roundNo, matchNo),
-          },
-          label,
-          problems,
-        );
+        // A one-off match is a series of one; only a real series says which
+        // game a score belongs to, so ordinary matches keep their old shape.
+        const series = match.bestOf > 1;
 
-        if (aHooks === undefined || bHooks === undefined) {
-          if (video) {
-            problems.push(`${label}: enter the score to save the video link.`);
+        for (let game = 1; game <= match.bestOf; game++) {
+          const label = series
+            ? `${round.name}, match ${matchNo}, game ${game}`
+            : `${round.name}, match ${matchNo}`;
+          const { aHooks, bHooks, video } = readMatch(
+            formData,
+            {
+              aHooks: field.knockoutHooks(roundNo, matchNo, game, "a"),
+              bHooks: field.knockoutHooks(roundNo, matchNo, game, "b"),
+              video: field.knockoutVideo(roundNo, matchNo, game),
+            },
+            label,
+            problems,
+          );
+
+          if (aHooks === undefined || bHooks === undefined) {
+            if (video) {
+              problems.push(`${label}: enter the score to save the video link.`);
+            }
+            continue;
           }
-          return;
-        }
 
-        scores.push({ round: roundNo, match: matchNo, aHooks, bHooks, video });
+          scores.push({
+            round: roundNo,
+            match: matchNo,
+            ...(series ? { game } : {}),
+            aHooks,
+            bHooks,
+            video,
+          });
+        }
       });
     });
 
-    knockout = { seeds, ...(scores.length > 0 ? { scores } : {}) };
+    // `bestOf` is authored by hand alongside the killers and the groups, so it
+    // travels through the editor untouched rather than being rewritten.
+    knockout = {
+      seeds,
+      ...(tournament.knockout.bestOf ? { bestOf: tournament.knockout.bestOf } : {}),
+      ...(scores.length > 0 ? { scores } : {}),
+    };
   }
 
   if (problems.length > 0) {

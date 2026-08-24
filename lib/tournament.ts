@@ -70,16 +70,24 @@ export interface Result {
  */
 export type SeedRef = string;
 
-/** One knockout-stage score. Matches are addressed by position in the bracket. */
+/**
+ * One knockout-stage score — a single game, addressed by its position in the
+ * bracket. A match played as a series has one of these per game.
+ */
 export interface KnockoutScore {
   /** 1-based round number, earliest round first. */
   round: number;
   /** 1-based match number within that round, top to bottom. */
   match: number;
+  /**
+   * 1-based game number within a series, for a match played as a best of
+   * several. Left out for an ordinary one-off match, which is game 1.
+   */
+  game?: number;
   /** Hooks scored by the first and second slot of the match. */
   aHooks: number;
   bHooks: number;
-  /** Full YouTube URL for the match, ideally timestamped. */
+  /** Full YouTube URL for the game, ideally timestamped. */
   video?: string;
 }
 
@@ -91,7 +99,14 @@ export interface KnockoutScore {
 export interface Knockout {
   /** First-round pairings, top to bottom. Two `SeedRef`s per match. */
   seeds: Array<[SeedRef, SeedRef]>;
-  /** Scores for the matches played so far, in any order. */
+  /**
+   * Rounds played as a series rather than a single game, keyed by the round
+   * name shown on the bracket — `{ "Final": 5 }` makes the final a best of
+   * five. Every other round stays a one-off. A name no round answers to is
+   * ignored, so `bestOf` can be authored ahead of the bracket growing into it.
+   */
+  bestOf?: Record<string, number>;
+  /** Scores for the games played so far, in any order. */
   scores?: KnockoutScore[];
 }
 
@@ -208,21 +223,51 @@ export interface KnockoutSideView {
    * from — "Winner Group A", "Best 3rd place", "Winner of QF 2".
    */
   label: string;
+  /** One-off matches only: hooks scored. A series counts in games instead. */
   hooks?: number;
+  /**
+   * Series only: games won so far, once the series is under way. Both sides
+   * carry a number as soon as either does, so 3–0 reads as a sweep rather than
+   * a blank.
+   */
+  games?: number;
   winner: boolean;
+}
+
+/** One game of a knockout match. A one-off match is a series of one. */
+export interface KnockoutGameView {
+  /** 1-based game number within the match. */
+  number: number;
+  /** Hooks scored by each slot, once the game has been played. */
+  aHooks?: number;
+  bHooks?: number;
+  video?: string;
+  /** Spoiler mode: played, but its score is being kept back. */
+  withheld?: boolean;
+  /** Who took it — unset while unplayed, and when it finished level. */
+  winner?: "a" | "b";
 }
 
 export interface KnockoutMatchView {
   a: KnockoutSideView;
   b: KnockoutSideView;
+  /** One-off matches only: the video. A series links its games individually. */
   video?: string;
+  /**
+   * Games this match is played over — 1 unless the round is listed in
+   * `Knockout.bestOf`. A best of five is won by the first to three.
+   */
+  bestOf: number;
+  /** One entry per game of the series, whether or not it has been played. */
+  games: KnockoutGameView[];
+  /** Settled: someone has won the series, or every game has been played. */
   played: boolean;
-  /** Played, but level on hooks — so nobody advances yet. */
+  /** Played out, but nobody won it — so nobody advances yet. */
   drawn: boolean;
   /**
-   * Spoiler mode: played, but its score is being kept back. `video` is still
-   * set if there's something to watch, so the card can offer the link without
-   * the hooks.
+   * Spoiler mode: at least one game is played but being kept back. Each game's
+   * `video` is still set if there's something to watch, so the card can offer
+   * the link without the hooks.
    */
   withheld?: boolean;
 }
@@ -820,9 +865,58 @@ function resolveSeed(
 }
 
 /**
+ * How many games a round's matches are played over. One unless the data names
+ * the round in `knockout.bestOf`; anything that isn't a whole number of games
+ * is treated as a one-off rather than breaking the bracket.
+ */
+function seriesLength(knockout: Knockout | undefined, round: string): number {
+  const declared = knockout?.bestOf?.[round];
+  if (typeof declared !== "number" || !Number.isInteger(declared)) return 1;
+  return declared >= 1 ? declared : 1;
+}
+
+/** Games it takes to win a series: three of a best of five. */
+function gamesToWin(bestOf: number): number {
+  return Math.floor(bestOf / 2) + 1;
+}
+
+/** How a series stands: games each, and whether anyone has taken it. */
+interface SeriesTally {
+  aGames: number;
+  bGames: number;
+  /** Games played in sequence from the first — the series stops at a gap. */
+  played: number;
+  aWins: boolean;
+  bWins: boolean;
+}
+
+/**
+ * Count a series up, game by game in order, stopping the moment it's won —
+ * anything entered after that is a dead rubber and doesn't count. A gap stops
+ * the count too, since games are played in order: game 5 recorded on its own
+ * says nothing about who leads.
+ */
+function tallySeries(games: KnockoutGameView[], bestOf: number): SeriesTally {
+  const needed = gamesToWin(bestOf);
+  let aGames = 0;
+  let bGames = 0;
+  let played = 0;
+
+  for (const game of games) {
+    if (game.aHooks === undefined || game.bHooks === undefined) break;
+    played++;
+    if (game.winner === "a") aGames++;
+    else if (game.winner === "b") bGames++;
+    if (aGames >= needed || bGames >= needed) break;
+  }
+
+  return { aGames, bGames, played, aWins: aGames >= needed, bWins: bGames >= needed };
+}
+
+/**
  * Build the bracket: the authored seeds make the first round, then each
  * following round is half the size, filled by the winners below it. A match
- * that finished level leaves the slot above it open.
+ * that's played out without anyone winning it leaves the slot above it open.
  */
 export function buildKnockout(
   t: Tournament,
@@ -832,16 +926,17 @@ export function buildKnockout(
   const seeds = t.knockout?.seeds ?? [];
   if (seeds.length === 0) return [];
 
-  const scoreAt = new Map(
-    (t.knockout?.scores ?? []).map((s) => [`${s.round}.${s.match}`, s]),
-  );
-  // Spoiler mode: scores filtered out of `t` are still known about, so a match
+  // Keyed by round, match and game — a score with no `game` is a one-off match,
+  // which is game 1 of a series of one.
+  const key = (s: KnockoutScore) => `${s.round}.${s.match}.${s.game ?? 1}`;
+  const scoreAt = new Map((t.knockout?.scores ?? []).map((s) => [key(s), s]));
+  // Spoiler mode: scores filtered out of `t` are still known about, so a game
   // can offer its video without giving up the hooks. Seeds aren't filtered, so
   // positions in the bracket line up between the two.
   const withheldAt = new Map(
     (unfiltered?.knockout?.scores ?? [])
-      .filter((s) => !scoreAt.has(`${s.round}.${s.match}`))
-      .map((s) => [`${s.round}.${s.match}`, s]),
+      .filter((s) => !scoreAt.has(key(s)))
+      .map((s) => [key(s), s]),
   );
 
   const rounds: KnockoutRoundView[] = [];
@@ -852,6 +947,7 @@ export function buildKnockout(
 
   for (let r = 0; slots.length >= 2; r++) {
     const name = roundName(slots.length, r);
+    const bestOf = seriesLength(t.knockout, name);
     const matches: KnockoutMatchView[] = [];
     const winners: Array<{ killer?: Killer; label: string }> = [];
 
@@ -859,27 +955,54 @@ export function buildKnockout(
       const a = slots[m];
       const b = slots[m + 1];
       const position = `${r + 1}.${m / 2 + 1}`;
-      const score = scoreAt.get(position);
-      const withheld = withheldAt.get(position);
-      const played = score !== undefined;
-      const aWins = played && score.aHooks > score.bHooks;
-      const bWins = played && score.bHooks > score.aHooks;
+
+      const games: KnockoutGameView[] = [];
+      for (let g = 1; g <= bestOf; g++) {
+        const score = scoreAt.get(`${position}.${g}`);
+        const withheld = withheldAt.get(`${position}.${g}`);
+        games.push({
+          number: g,
+          aHooks: score?.aHooks,
+          bHooks: score?.bHooks,
+          video: score?.video ?? withheld?.video,
+          withheld: withheld !== undefined,
+          winner:
+            score === undefined
+              ? undefined
+              : score.aHooks > score.bHooks
+                ? "a"
+                : score.bHooks > score.aHooks
+                  ? "b"
+                  : undefined,
+        });
+      }
+
+      const { aGames, bGames, played, aWins, bWins } = tallySeries(games, bestOf);
+      // Settled either way: someone has it, or every game is in and nobody has.
+      const decided = aWins || bWins || played >= bestOf;
+      // A series shows games won rather than hooks, but only once it's under
+      // way — before that both sides sit at "–" like any unplayed match.
+      const series = bestOf > 1 && played > 0;
 
       matches.push({
-        video: score?.video ?? withheld?.video,
-        played,
-        drawn: played && !aWins && !bWins,
-        withheld: withheld !== undefined,
+        video: bestOf === 1 ? games[0].video : undefined,
+        bestOf,
+        games,
+        played: decided,
+        drawn: decided && !aWins && !bWins,
+        withheld: games.some((g) => g.withheld),
         a: {
           killer: a.killer,
           label: a.killer?.name ?? a.label,
-          hooks: score?.aHooks,
+          hooks: bestOf === 1 ? games[0].aHooks : undefined,
+          games: series ? aGames : undefined,
           winner: aWins,
         },
         b: {
           killer: b.killer,
           label: b.killer?.name ?? b.label,
-          hooks: score?.bHooks,
+          hooks: bestOf === 1 ? games[0].bHooks : undefined,
+          games: series ? bGames : undefined,
           winner: bWins,
         },
       });
