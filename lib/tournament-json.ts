@@ -157,11 +157,19 @@ function serializeKnockout(knockout: Knockout): string {
     }`,
   ];
 
+  // Hand-authored, and short enough to sit on one line.
+  if (knockout.bestOf && Object.keys(knockout.bestOf).length > 0) {
+    lines.push(
+      `${IND.repeat(2)}"bestOf": ${compactObject(Object.entries(knockout.bestOf))}`,
+    );
+  }
+
   if (knockout.scores && knockout.scores.length > 0) {
     const scores = knockout.scores.map((s) =>
       compactObject([
         ["round", s.round],
         ["match", s.match],
+        ["game", s.game],
         ["aHooks", s.aHooks],
         ["bHooks", s.bHooks],
         ["video", s.video],

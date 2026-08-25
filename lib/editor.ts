@@ -31,6 +31,15 @@ export interface EditorGroup {
   fixtures: EditorFixture[];
 }
 
+/** One game of a knockout match — an ordinary match has exactly one. */
+export interface EditorKnockoutGame {
+  /** 1-based game number within the match. */
+  number: number;
+  aHooks?: number;
+  bHooks?: number;
+  video?: string;
+}
+
 /** One knockout match: who's in it is derived, so only the score is editable. */
 export interface EditorKnockoutMatch {
   /** 1-based position in the bracket. */
@@ -39,10 +48,11 @@ export interface EditorKnockoutMatch {
   /** Display labels for the two slots, resolved as far as results allow. */
   aLabel: string;
   bLabel: string;
-  aHooks?: number;
-  bHooks?: number;
-  video?: string;
-  /** Played but level, so nobody advanced. */
+  /** Games it's played over: 1 for a one-off, 5 for a best-of-five final. */
+  bestOf: number;
+  /** One entry per game, in order — a score box each. */
+  games: EditorKnockoutGame[];
+  /** Played out but nobody won it, so nobody advanced. */
   drawn: boolean;
 }
 
@@ -96,9 +106,11 @@ export const field = {
   groupSchedule: (groupIndex: number) => `g.${groupIndex}.schedule`,
   /** JSON: `[SeedRef, SeedRef][]` — the whole first round in one go. */
   seeds: "seeds",
-  knockoutHooks: (round: number, match: number, side: "a" | "b") =>
-    `k.${round}.${match}.${side}Hooks`,
-  knockoutVideo: (round: number, match: number) => `k.${round}.${match}.video`,
+  /** Knockout scores are per game — an ordinary match is just game 1. */
+  knockoutHooks: (round: number, match: number, game: number, side: "a" | "b") =>
+    `k.${round}.${match}.${game}.${side}Hooks`,
+  knockoutVideo: (round: number, match: number, game: number) =>
+    `k.${round}.${match}.${game}.video`,
 };
 
 /**

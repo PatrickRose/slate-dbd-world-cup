@@ -1,4 +1,5 @@
 import type {
+  KnockoutGameView,
   KnockoutMatchView,
   KnockoutRoundView,
   KnockoutSideView,
@@ -35,27 +36,104 @@ function Side({ side, played }: { side: KnockoutSideView; played: boolean }) {
           {side.label}
         </span>
       </span>
+      {/* Hooks for a one-off match, games won for a series — never both, so
+          the column stays one number wide either way. */}
       <span className="shrink-0 text-sm tabular-nums" data-spoilerable>
-        {typeof side.hooks === "number" ? side.hooks : "–"}
+        {side.games ?? side.hooks ?? "–"}
       </span>
     </div>
   );
 }
 
+/**
+ * One game of a series: its number and score, linking to the video if there is
+ * one. The score is `data-spoilerable` like any other, so which games have been
+ * played doesn't leak out of the server-rendered HTML before the client has
+ * rebuilt the bracket for this viewer.
+ */
+function GameChip({ game }: { game: KnockoutGameView }) {
+  const score =
+    typeof game.aHooks === "number" && typeof game.bHooks === "number"
+      ? `${game.aHooks}–${game.bHooks}`
+      : "–";
+
+  const body = (
+    <>
+      <span className="text-[10px] font-semibold uppercase tracking-wide opacity-60">
+        G{game.number}
+      </span>
+      <span className="tabular-nums" data-spoilerable>
+        {score}
+      </span>
+    </>
+  );
+
+  const shell =
+    "flex items-center gap-1 rounded border border-black/10 px-1.5 py-0.5 text-xs dark:border-white/15";
+
+  if (game.video) {
+    return (
+      <a
+        href={game.video}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={
+          game.withheld
+            ? "Hidden by spoiler mode — watch it, then tick the video off"
+            : `Watch game ${game.number}`
+        }
+        className={`${shell} font-semibold text-red-600 transition-colors hover:bg-red-600 hover:text-white dark:text-red-400`}
+      >
+        {body}
+      </a>
+    );
+  }
+
+  return (
+    <span
+      className={`${shell} text-zinc-500 dark:text-zinc-400 ${
+        game.withheld ? "spoiler-hatch" : ""
+      }`}
+      title={game.withheld ? "Played, but no video linked" : undefined}
+    >
+      {body}
+    </span>
+  );
+}
+
 function MatchCard({ match }: { match: KnockoutMatchView }) {
+  const series = match.bestOf > 1;
+
   return (
     <div className="overflow-hidden rounded-lg border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900">
+      {series && (
+        <p className="border-b border-black/5 bg-black/[0.03] px-3 py-1 text-center text-[10px] font-semibold uppercase tracking-wide text-zinc-500 dark:border-white/10 dark:bg-white/[0.04]">
+          Best of {match.bestOf} · first to {Math.floor(match.bestOf / 2) + 1}
+        </p>
+      )}
       <Side side={match.a} played={match.played} />
       <div className="border-t border-black/5 dark:border-white/10" />
       <Side side={match.b} played={match.played} />
+      {/* A series counts in games, so the hooks live here — one chip per game,
+          played or not, which also shows how far the series has left to run. */}
+      {series && (
+        <div className="flex flex-wrap items-center justify-center gap-1 border-t border-black/5 px-2 py-1.5 dark:border-white/10">
+          {match.games.map((game) => (
+            <GameChip key={game.number} game={game} />
+          ))}
+        </div>
+      )}
       {match.drawn && (
         <p className="border-t border-black/5 bg-amber-50 px-3 py-1 text-center text-xs font-medium text-amber-700 dark:border-white/10 dark:bg-amber-500/10 dark:text-amber-400">
-          Level on hooks — no one through
+          {series
+            ? `All ${match.bestOf} games played, series level — no one through`
+            : "Level on hooks — no one through"}
         </p>
       )}
       {/* Played, hidden, and nothing to watch: same dead end as an unlinked
-          group match, so it's marked rather than left looking unplayed. */}
-      {match.withheld && !match.video && (
+          group match, so it's marked rather than left looking unplayed. A
+          series says it per game on its chips instead. */}
+      {!series && match.withheld && !match.video && (
         <p className="spoiler-hatch border-t border-black/5 px-3 py-1 text-center text-xs font-semibold text-zinc-500 dark:border-white/10 dark:text-zinc-400">
           Hidden — no video linked
         </p>

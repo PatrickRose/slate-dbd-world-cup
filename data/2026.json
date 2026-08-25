@@ -247,6 +247,7 @@
       ["Group D:2", "Group F:1"],
       ["Group C:2", "Group G:1"],
       ["Group B:2", "Group A:2"]
-    ]
+    ],
+    "bestOf": { "Final": 5 }
   }
 }

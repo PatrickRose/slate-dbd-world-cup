@@ -83,6 +83,16 @@ function roundsLabel(rounds: number[]): string {
   return `Rounds ${sorted[0]}–${sorted[sorted.length - 1]}`;
 }
 
+/** Which games of a series a video covers: "Game 3", "Games 1–3", "Games 1, 4". */
+function gamesLabel(games: number[]): string {
+  const sorted = [...new Set(games)].sort((x, y) => x - y);
+  if (sorted.length === 1) return `Game ${sorted[0]}`;
+  const contiguous = sorted.every((g, i) => g === sorted[0] + i);
+  return contiguous
+    ? `Games ${sorted[0]}–${sorted[sorted.length - 1]}`
+    : `Games ${sorted.join(", ")}`;
+}
+
 /**
  * Every video referenced by the tournament, in the order the matches were
  * played: group stage by round then group, knockout after.
@@ -100,6 +110,8 @@ export function buildVideoList(t: Tournament): VideoSummary[] {
     order: number;
     /** Knockout rounds are named, not numbered. */
     stageLabel?: string;
+    /** Which games of a knockout series this video covers, if it's a series. */
+    stageGames?: number[];
   }
   const entries = new Map<string, Entry>();
 
@@ -137,13 +149,19 @@ export function buildVideoList(t: Tournament): VideoSummary[] {
     });
   });
 
+  // A series links each of its games separately, so they're listed — and ticked
+  // off — one at a time. Games sharing a stream still collapse into one entry,
+  // the same way three group matches on one video do.
   buildKnockout(t, groups).forEach((round, roundIndex) => {
     round.matches.forEach((match) => {
-      const id = videoId(match.video);
-      if (!id || !match.video) return;
-      const e = entry(id, match.video, 100_000 + roundIndex);
-      e.matches++;
-      e.stageLabel = round.name;
+      match.games.forEach((game) => {
+        const id = videoId(game.video);
+        if (!id || !game.video) return;
+        const e = entry(id, game.video, 100_000 + roundIndex);
+        e.matches++;
+        e.stageLabel = round.name;
+        if (match.bestOf > 1) (e.stageGames ??= []).push(game.number);
+      });
     });
   });
 
@@ -154,7 +172,9 @@ export function buildVideoList(t: Tournament): VideoSummary[] {
       url: e.url,
       matches: e.matches,
       label: e.stageLabel
-        ? e.stageLabel
+        ? e.stageGames
+          ? `${e.stageLabel} · ${gamesLabel(e.stageGames)}`
+          : e.stageLabel
         : `${roundsLabel(e.rounds)} · ${groupsLabel([...e.groups])}`,
     }));
 }
