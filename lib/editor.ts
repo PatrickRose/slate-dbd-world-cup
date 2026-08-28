@@ -37,6 +37,13 @@ export interface EditorKnockoutGame {
   number: number;
   aHooks?: number;
   bHooks?: number;
+  /**
+   * Generators left standing against each side — the knockout tie-break, which
+   * only settles a game that finished level on hooks. Entered for every game
+   * all the same: which ones end up level isn't known until they're played.
+   */
+  aGens?: number;
+  bGens?: number;
   video?: string;
 }
 
@@ -109,6 +116,9 @@ export const field = {
   /** Knockout scores are per game — an ordinary match is just game 1. */
   knockoutHooks: (round: number, match: number, game: number, side: "a" | "b") =>
     `k.${round}.${match}.${game}.${side}Hooks`,
+  /** Generators left, the knockout tie-break — per game, like the hooks. */
+  knockoutGens: (round: number, match: number, game: number, side: "a" | "b") =>
+    `k.${round}.${match}.${game}.${side}Gens`,
   knockoutVideo: (round: number, match: number, game: number) =>
     `k.${round}.${match}.${game}.video`,
 };

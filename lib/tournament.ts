@@ -87,6 +87,17 @@ export interface KnockoutScore {
   /** Hooks scored by the first and second slot of the match. */
   aHooks: number;
   bHooks: number;
+  /**
+   * Generators left standing against each side — the knockout tie-break. Only
+   * consulted when the hooks are level, where the side that left more standing
+   * takes the game.
+   *
+   * Optional, and only worth recording for a game that finished level: a game
+   * decided on hooks never reads them, and a level one with none recorded is
+   * left undecided rather than guessed at.
+   */
+  aGens?: number;
+  bGens?: number;
   /** Full YouTube URL for the game, ideally timestamped. */
   video?: string;
 }
@@ -241,10 +252,26 @@ export interface KnockoutGameView {
   /** Hooks scored by each slot, once the game has been played. */
   aHooks?: number;
   bHooks?: number;
+  /**
+   * Generators left standing against each slot, as recorded. Carried whether or
+   * not they were needed, so the editor round-trips them — but only worth
+   * *showing* when `tiebreak` says they decided something.
+   */
+  aGens?: number;
+  bGens?: number;
   video?: string;
   /** Spoiler mode: played, but its score is being kept back. */
   withheld?: boolean;
-  /** Who took it — unset while unplayed, and when it finished level. */
+  /**
+   * The game finished level on hooks, so the generators left settle it. Set
+   * whether or not any were recorded, since a level game with none is exactly
+   * the case the card needs to point at.
+   */
+  tiebreak?: boolean;
+  /**
+   * Who took it — unset while unplayed, and when it finished level on the
+   * generators too (or with none recorded to separate them).
+   */
   winner?: "a" | "b";
 }
 
@@ -880,6 +907,24 @@ function gamesToWin(bestOf: number): number {
   return Math.floor(bestOf / 2) + 1;
 }
 
+/**
+ * Who won a knockout game. More hooks takes it; level on hooks, the knockout
+ * tie-break is the generators left standing and whoever left more goes through.
+ *
+ * Level on both — or level on hooks with no generators recorded to separate the
+ * two — belongs to nobody, and the bracket says so rather than guessing. That
+ * makes the tie-break additive: every game already decided on hooks reads
+ * exactly as it did before, generators or no generators.
+ */
+function gameWinner(score: KnockoutScore): "a" | "b" | undefined {
+  if (score.aHooks !== score.bHooks) {
+    return score.aHooks > score.bHooks ? "a" : "b";
+  }
+  if (score.aGens === undefined || score.bGens === undefined) return undefined;
+  if (score.aGens === score.bGens) return undefined;
+  return score.aGens > score.bGens ? "a" : "b";
+}
+
 /** How a series stands: games each, and whether anyone has taken it. */
 interface SeriesTally {
   aGames: number;
@@ -964,16 +1009,12 @@ export function buildKnockout(
           number: g,
           aHooks: score?.aHooks,
           bHooks: score?.bHooks,
+          aGens: score?.aGens,
+          bGens: score?.bGens,
           video: score?.video ?? withheld?.video,
           withheld: withheld !== undefined,
-          winner:
-            score === undefined
-              ? undefined
-              : score.aHooks > score.bHooks
-                ? "a"
-                : score.bHooks > score.aHooks
-                  ? "b"
-                  : undefined,
+          tiebreak: score !== undefined && score.aHooks === score.bHooks,
+          winner: score && gameWinner(score),
         });
       }
 

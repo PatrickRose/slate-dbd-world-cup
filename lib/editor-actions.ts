@@ -18,10 +18,11 @@ import {
 import { getTournament } from "./tournament-data";
 import { writeTournamentJson } from "./tournament-json";
 
-/** Sentinel for "something was typed, but it isn't a valid hook count". */
+/** Sentinel for "something was typed, but it isn't a valid count". */
 const INVALID = Symbol("invalid");
 
-function readHooks(
+/** One whole-number box — hooks or generators left. Empty means "not played". */
+function readCount(
   formData: FormData,
   name: string,
 ): number | undefined | typeof INVALID {
@@ -42,15 +43,35 @@ function readText(formData: FormData, name: string): string | undefined {
 /**
  * One match's score + video, validated together: both hook counts or neither,
  * and a video link that actually looks like a link.
+ *
+ * Knockout games pass the generators-left boxes too — the tie-break — which go
+ * through the same both-or-neither rule. Group matches leave them out entirely,
+ * since the group stage settles a level match as a draw rather than on
+ * generators.
  */
 function readMatch(
   formData: FormData,
-  names: { aHooks: string; bHooks: string; video: string },
+  names: {
+    aHooks: string;
+    bHooks: string;
+    video: string;
+    /** Knockout games only. */
+    aGens?: string;
+    bGens?: string;
+  },
   label: string,
   problems: string[],
-): { aHooks?: number; bHooks?: number; video?: string } {
-  const aHooks = readHooks(formData, names.aHooks);
-  const bHooks = readHooks(formData, names.bHooks);
+): {
+  aHooks?: number;
+  bHooks?: number;
+  aGens?: number;
+  bGens?: number;
+  video?: string;
+} {
+  const aHooks = readCount(formData, names.aHooks);
+  const bHooks = readCount(formData, names.bHooks);
+  const aGens = names.aGens ? readCount(formData, names.aGens) : undefined;
+  const bGens = names.bGens ? readCount(formData, names.bGens) : undefined;
   const video = readText(formData, names.video);
 
   if (aHooks === INVALID || bHooks === INVALID) {
@@ -61,12 +82,22 @@ function readMatch(
     problems.push(`${label}: enter both hook counts, or clear both.`);
     return {};
   }
-  if (video && !/^https?:\/\//i.test(video)) {
-    problems.push(`${label}: the video link must start with http:// or https://.`);
+  if (aGens === INVALID || bGens === INVALID) {
+    problems.push(
+      `${label}: generators left must be whole numbers of 0 or more.`,
+    );
     return { aHooks, bHooks };
   }
+  if ((aGens === undefined) !== (bGens === undefined)) {
+    problems.push(`${label}: enter both generator counts, or clear both.`);
+    return { aHooks, bHooks };
+  }
+  if (video && !/^https?:\/\//i.test(video)) {
+    problems.push(`${label}: the video link must start with http:// or https://.`);
+    return { aHooks, bHooks, aGens, bGens };
+  }
 
-  return { aHooks, bHooks, video };
+  return { aHooks, bHooks, aGens, bGens, video };
 }
 
 /**
@@ -265,11 +296,13 @@ export async function saveTournament(
           const label = series
             ? `${round.name}, match ${matchNo}, game ${game}`
             : `${round.name}, match ${matchNo}`;
-          const { aHooks, bHooks, video } = readMatch(
+          const { aHooks, bHooks, aGens, bGens, video } = readMatch(
             formData,
             {
               aHooks: field.knockoutHooks(roundNo, matchNo, game, "a"),
               bHooks: field.knockoutHooks(roundNo, matchNo, game, "b"),
+              aGens: field.knockoutGens(roundNo, matchNo, game, "a"),
+              bGens: field.knockoutGens(roundNo, matchNo, game, "b"),
               video: field.knockoutVideo(roundNo, matchNo, game),
             },
             label,
@@ -280,6 +313,11 @@ export async function saveTournament(
             if (video) {
               problems.push(`${label}: enter the score to save the video link.`);
             }
+            if (aGens !== undefined || bGens !== undefined) {
+              problems.push(
+                `${label}: enter the hooks to save the generators left.`,
+              );
+            }
             continue;
           }
 
@@ -289,6 +327,8 @@ export async function saveTournament(
             ...(series ? { game } : {}),
             aHooks,
             bHooks,
+            aGens,
+            bGens,
             video,
           });
         }
