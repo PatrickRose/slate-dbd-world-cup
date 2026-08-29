@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { SeedRef } from "@/lib/tournament";
+import { HOOKS_FOR_4K, type SeedRef } from "@/lib/tournament";
 import {
   field,
   IDLE_SAVE_STATE,
@@ -360,14 +360,11 @@ function KnockoutMatchCard({
   // A one-off keeps its score inline with the slots; a series can't, since
   // every game needs its own pair of boxes.
   const single = series ? undefined : match.games[0];
-  // A game that came out level on hooks is settled on the generators left, so
-  // until they're entered the bracket has nobody to advance out of it. Read off
-  // the last save rather than what's being typed — the knockout boxes are
+  // A game that came out level at a 4k each is settled on the generators left,
+  // so until they're entered the bracket has nobody to advance out of it. Read
+  // off the last save rather than what's being typed — the knockout boxes are
   // uncontrolled, so this refreshes when the file does.
-  const needsGens = match.games.some(
-    (g) =>
-      g.aHooks !== undefined && g.aHooks === g.bHooks && g.aGens === undefined,
-  );
+  const needsGens = match.games.some((g) => g.tiebreak && g.aGens === undefined);
 
   const slot = (side: 0 | 1) =>
     seed ? (
@@ -495,15 +492,15 @@ function KnockoutMatchCard({
           something to go and enter, not a settled outcome to report. */}
       {needsGens ? (
         <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-          {series ? "A game finished" : "Finished"} level on hooks — enter the
-          generators left to settle it.
+          {series ? "A game finished" : "Finished"} level at a 4k each — enter
+          the generators left to settle it.
         </p>
       ) : (
         match.drawn && (
           <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
             {series
-              ? `All ${match.bestOf} games played and still level — nobody advances from this one.`
-              : "Level on hooks and generators — nobody advances from this one."}
+              ? `All ${match.bestOf} games played and still level — this one gets replayed.`
+              : "Level, with nothing to separate them — this one gets replayed."}
           </p>
         )
       )}
@@ -543,8 +540,10 @@ function KnockoutSection({
         round fills itself from the winners as you enter hooks. Slot names update
         when you save. A round played as a series takes a score and a link per
         game — leave the games that haven&apos;t been played empty. Hooks decide
-        a game; level on hooks, whoever left more generators standing takes it,
-        so fill the gens boxes in for anything that finished level.
+        a game; level at a 4k each — {HOOKS_FOR_4K} hooks apiece — and whoever
+        left more generators standing takes it. Any other tie is a replay, so
+        the gens only count on a level 4k; fill them in as you go, since how a
+        game ends up isn&apos;t known until it&apos;s played.
       </p>
       <div className="overflow-x-auto pb-2">
         <div className="flex min-w-max gap-5">

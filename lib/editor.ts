@@ -39,12 +39,18 @@ export interface EditorKnockoutGame {
   bHooks?: number;
   /**
    * Generators left standing against each side — the knockout tie-break, which
-   * only settles a game that finished level on hooks. Entered for every game
-   * all the same: which ones end up level isn't known until they're played.
+   * only settles a game that finished level at a 4k each. Entered for every
+   * game all the same: how one ends up isn't known until it's played.
    */
   aGens?: number;
   bGens?: number;
   video?: string;
+  /**
+   * This game is the one the generators settle — level at a 4k each. Computed
+   * where the rule lives (`buildKnockout`) rather than re-derived here, so the
+   * editor and the bracket can't drift on what counts as a 4k.
+   */
+  tiebreak?: boolean;
 }
 
 /** One knockout match: who's in it is derived, so only the score is editable. */

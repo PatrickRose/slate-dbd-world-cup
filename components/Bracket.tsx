@@ -56,7 +56,7 @@ function GameChip({ game }: { game: KnockoutGameView }) {
     typeof game.aHooks === "number" && typeof game.bHooks === "number"
       ? `${game.aHooks}–${game.bHooks}`
       : "–";
-  // Only a game the hooks left level is settled on generators, and only then is
+  // Only a game level at a 4k each is settled on generators, and only then is
   // the count worth the space — see `gens` in `MatchCard`.
   const gens = gensScore(game);
 
@@ -110,8 +110,8 @@ function GameChip({ game }: { game: KnockoutGameView }) {
 }
 
 /**
- * A game's generators as a score, but only where they matter: the hooks came
- * out level and there are generators recorded to separate the two. Anywhere
+ * A game's generators as a score, but only where they matter: it came out level
+ * at a 4k each and there are generators recorded to separate the two. Anywhere
  * else there's nothing to say, so the bracket says nothing.
  */
 function gensScore(game: KnockoutGameView): string | undefined {
@@ -146,24 +146,24 @@ function MatchCard({ match }: { match: KnockoutMatchView }) {
           ))}
         </div>
       )}
-      {/* Level on hooks and settled on generators: the winner is already tinted
-          above, so this only has to say what settled it. Spoilerable like any
-          other score — it gives the result away just as plainly. */}
+      {/* Level at a 4k each and settled on generators: the winner is already
+          tinted above, so this only has to say what settled it. Spoilerable
+          like any other score — it gives the result away just as plainly. */}
       {gens && !match.drawn && (
         <p
           data-spoilerable
           className="border-t border-black/5 px-3 py-1 text-center text-xs font-medium text-zinc-500 dark:border-white/10 dark:text-zinc-400"
         >
-          Level on hooks — through on generators left, {gens}
+          A 4k each — through on generators left, {gens}
         </p>
       )}
       {match.drawn && (
         <p className="border-t border-black/5 bg-amber-50 px-3 py-1 text-center text-xs font-medium text-amber-700 dark:border-white/10 dark:bg-amber-500/10 dark:text-amber-400">
           {series
-            ? `All ${match.bestOf} games played, series level — no one through`
+            ? `All ${match.bestOf} games played, series level — to be replayed`
             : gens
-              ? `Level on hooks and generators, ${gens} — no one through`
-              : "Level on hooks — no one through"}
+              ? `A 4k each, level on generators too, ${gens} — to be replayed`
+              : "Level on hooks — to be replayed"}
         </p>
       )}
       {/* Played, hidden, and nothing to watch: same dead end as an unlinked
@@ -215,8 +215,8 @@ export function Bracket({ rounds }: { rounds: KnockoutRoundView[] }) {
     <section className="mt-12">
       <h2 className="text-xl font-bold tracking-tight">Knockout Stage</h2>
       <p className="mb-4 mt-1 text-sm text-zinc-500">
-        More hooks wins. Level on hooks, whoever left more generators standing
-        goes through.
+        More hooks wins. Level at a 4k each, whoever left more generators
+        standing goes through — any other tie is replayed.
       </p>
 
       <div className="overflow-x-auto pb-2">

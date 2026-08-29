@@ -44,10 +44,10 @@ function readText(formData: FormData, name: string): string | undefined {
  * One match's score + video, validated together: both hook counts or neither,
  * and a video link that actually looks like a link.
  *
- * Knockout games pass the generators-left boxes too — the tie-break — which go
- * through the same both-or-neither rule. Group matches leave them out entirely,
- * since the group stage settles a level match as a draw rather than on
- * generators.
+ * Knockout games pass the generators-left boxes too — the tie-break that
+ * settles a game level at a 4k each — which go through the same both-or-neither
+ * rule. Group matches leave them out entirely, since the group stage settles a
+ * level match as a draw rather than on generators.
  */
 function readMatch(
   formData: FormData,

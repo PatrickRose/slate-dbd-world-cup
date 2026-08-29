@@ -73,6 +73,7 @@ export default async function EditYearPage({
           aGens: g.aGens,
           bGens: g.bGens,
           video: g.video,
+          tiebreak: g.tiebreak,
         })),
         drawn: m.drawn,
       })),
