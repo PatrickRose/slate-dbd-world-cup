@@ -248,6 +248,16 @@
       ["Group C:2", "Group G:1"],
       ["Group B:2", "Group A:2"]
     ],
-    "bestOf": { "Final": 5 }
+    "bestOf": { "Final": 5 },
+    "scores": [
+      { "round": 1, "match": 1, "aHooks": 12, "bHooks": 10, "video": "https://www.youtube.com/watch?v=ZHncdSCv9-M" },
+      { "round": 1, "match": 2, "aHooks": 12, "bHooks": 11, "video": "https://youtu.be/ZHncdSCv9-M?si=zcGp2RR13egoDWPo&t=1180" },
+      { "round": 1, "match": 3, "aHooks": 12, "bHooks": 10, "video": "https://youtu.be/ZHncdSCv9-M?si=WCCxhOvcGrQg99rY&t=2533" },
+      { "round": 1, "match": 4, "aHooks": 12, "bHooks": 12, "aGens": 5, "bGens": 2, "video": "https://youtu.be/ZHncdSCv9-M?si=ErjPsKELbgvXeewg&t=3751" },
+      { "round": 1, "match": 5, "aHooks": 12, "bHooks": 12, "aGens": 0, "bGens": 5, "video": "https://youtu.be/ZHncdSCv9-M?si=8M23T6nodwsgDPqe&t=5121" },
+      { "round": 1, "match": 6, "aHooks": 9, "bHooks": 4, "video": "https://youtu.be/ZHncdSCv9-M?si=-8DFIU_WVbpPmMci&t=6398" },
+      { "round": 1, "match": 7, "aHooks": 7, "bHooks": 10, "video": "https://youtu.be/ZHncdSCv9-M?si=TNtUY1aFpoUibx3M&t=7469" },
+      { "round": 1, "match": 8, "aHooks": 10, "bHooks": 4, "video": "https://youtu.be/ZHncdSCv9-M?si=aDQYkyvBz5Vs9Dm9&t=8951" }
+    ]
   }
 }
