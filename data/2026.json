@@ -257,7 +257,13 @@
       { "round": 1, "match": 5, "aHooks": 12, "bHooks": 12, "aGens": 0, "bGens": 5, "video": "https://youtu.be/ZHncdSCv9-M?si=8M23T6nodwsgDPqe&t=5121" },
       { "round": 1, "match": 6, "aHooks": 9, "bHooks": 4, "video": "https://youtu.be/ZHncdSCv9-M?si=-8DFIU_WVbpPmMci&t=6398" },
       { "round": 1, "match": 7, "aHooks": 7, "bHooks": 10, "video": "https://youtu.be/ZHncdSCv9-M?si=TNtUY1aFpoUibx3M&t=7469" },
-      { "round": 1, "match": 8, "aHooks": 10, "bHooks": 4, "video": "https://youtu.be/ZHncdSCv9-M?si=aDQYkyvBz5Vs9Dm9&t=8951" }
+      { "round": 1, "match": 8, "aHooks": 10, "bHooks": 4, "video": "https://youtu.be/ZHncdSCv9-M?si=aDQYkyvBz5Vs9Dm9&t=8951" },
+      { "round": 2, "match": 1, "aHooks": 12, "bHooks": 12, "aGens": 2, "bGens": 5, "video": "https://youtu.be/ZHncdSCv9-M?si=5GpmXi_lnZ1yjSui&t=10211" },
+      { "round": 2, "match": 2, "aHooks": 12, "bHooks": 12, "aGens": 1, "bGens": 3, "video": "https://youtu.be/ZHncdSCv9-M?si=65qHIDMI--heXJ4G&t=11589" },
+      { "round": 2, "match": 3, "aHooks": 9, "bHooks": 8, "video": "https://www.youtube.com/watch?v=bOWs8fhZ-RM" },
+      { "round": 2, "match": 4, "aHooks": 12, "bHooks": 11, "video": "https://youtu.be/bOWs8fhZ-RM?si=G5b4xEF7RLBbOB-q&t=1565" },
+      { "round": 3, "match": 1, "aHooks": 11, "bHooks": 4, "video": "https://youtu.be/bOWs8fhZ-RM?si=bpcIcCeR903zbPOE&t=4696" },
+      { "round": 3, "match": 2, "aHooks": 12, "bHooks": 12, "aGens": 1, "bGens": 5, "video": "https://youtu.be/bOWs8fhZ-RM?si=b0EAMmgyLiT12Oun&t=5935" }
     ]
   }
 }
