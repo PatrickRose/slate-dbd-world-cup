@@ -172,6 +172,8 @@ function serializeKnockout(knockout: Knockout): string {
         ["game", s.game],
         ["aHooks", s.aHooks],
         ["bHooks", s.bHooks],
+        ["aGens", s.aGens],
+        ["bGens", s.bGens],
         ["video", s.video],
       ]),
     );

@@ -87,6 +87,17 @@ export interface KnockoutScore {
   /** Hooks scored by the first and second slot of the match. */
   aHooks: number;
   bHooks: number;
+  /**
+   * Generators left standing against each side — the knockout tie-break. Only
+   * consulted for a game level at a 4k each (see `HOOKS_FOR_4K`), where the
+   * side that left more standing takes it.
+   *
+   * Optional. A game decided on hooks never reads them, nor does one level
+   * below a 4k — that's a replay, generators or no generators — and a level 4k
+   * with none recorded is left undecided rather than guessed at.
+   */
+  aGens?: number;
+  bGens?: number;
   /** Full YouTube URL for the game, ideally timestamped. */
   video?: string;
 }
@@ -241,10 +252,27 @@ export interface KnockoutGameView {
   /** Hooks scored by each slot, once the game has been played. */
   aHooks?: number;
   bHooks?: number;
+  /**
+   * Generators left standing against each slot, as recorded. Carried whether or
+   * not they were needed, so the editor round-trips them — but only worth
+   * *showing* when `tiebreak` says they settle the game.
+   */
+  aGens?: number;
+  bGens?: number;
   video?: string;
   /** Spoiler mode: played, but its score is being kept back. */
   withheld?: boolean;
-  /** Who took it — unset while unplayed, and when it finished level. */
+  /**
+   * The game finished level at a 4k each, so the generators left settle it. Set
+   * whether or not any were recorded, since a level 4k with none is exactly the
+   * case the card needs to point at. A game level *below* a 4k doesn't set it:
+   * the generators have no say there, and it's replayed instead.
+   */
+  tiebreak?: boolean;
+  /**
+   * Who took it — unset while unplayed, and when it's a replay: level below a
+   * 4k, or level at one with nothing in the generators to separate them.
+   */
   winner?: "a" | "b";
 }
 
@@ -279,6 +307,19 @@ export interface KnockoutRoundView {
 
 const POINTS_WIN = 3;
 const POINTS_DRAW = 1;
+
+/**
+ * Hooks in a 4k: four survivors, three hook states each. It's the most a killer
+ * can score, and the only level score the knockout tie-break reads — see
+ * `gameWinner`.
+ *
+ * Hooks are all we have to go on, so this is what "a 4k" means here. Twelve
+ * hooks is always one, since the fourth hook state is the sacrifice; a 4k that
+ * came by mori or bleed-out scores fewer and doesn't count as one. That's the
+ * accepted simplification of deriving it from the score rather than recording
+ * kills separately.
+ */
+export const HOOKS_FOR_4K = 12;
 
 // ---------------------------------------------------------------------------
 // Computation
@@ -880,6 +921,37 @@ function gamesToWin(bestOf: number): number {
   return Math.floor(bestOf / 2) + 1;
 }
 
+/**
+ * Whether the generators left are what settles a game: it came out level at a
+ * 4k each, the one score the hooks can't separate, since neither killer left
+ * anything on the table. Any lower level score is a replay instead, so the
+ * generators are never read for it.
+ */
+function settledOnGens(score: KnockoutScore): boolean {
+  return score.aHooks === score.bHooks && score.aHooks === HOOKS_FOR_4K;
+}
+
+/**
+ * Who won a knockout game. More hooks takes it; level at a 4k each, the
+ * knockout tie-break is the generators left standing and whoever left more goes
+ * through.
+ *
+ * Nobody takes a game level on generators too, one level at a 4k with no
+ * generators recorded, or one level below a 4k — those are replayed, and the
+ * bracket says so rather than guessing. That makes the tie-break additive:
+ * every game already decided on hooks reads exactly as it did before,
+ * generators or no generators.
+ */
+function gameWinner(score: KnockoutScore): "a" | "b" | undefined {
+  if (score.aHooks !== score.bHooks) {
+    return score.aHooks > score.bHooks ? "a" : "b";
+  }
+  if (!settledOnGens(score)) return undefined;
+  if (score.aGens === undefined || score.bGens === undefined) return undefined;
+  if (score.aGens === score.bGens) return undefined;
+  return score.aGens > score.bGens ? "a" : "b";
+}
+
 /** How a series stands: games each, and whether anyone has taken it. */
 interface SeriesTally {
   aGames: number;
@@ -964,16 +1036,12 @@ export function buildKnockout(
           number: g,
           aHooks: score?.aHooks,
           bHooks: score?.bHooks,
+          aGens: score?.aGens,
+          bGens: score?.bGens,
           video: score?.video ?? withheld?.video,
           withheld: withheld !== undefined,
-          winner:
-            score === undefined
-              ? undefined
-              : score.aHooks > score.bHooks
-                ? "a"
-                : score.bHooks > score.aHooks
-                  ? "b"
-                  : undefined,
+          tiebreak: score !== undefined && settledOnGens(score),
+          winner: score && gameWinner(score),
         });
       }
 

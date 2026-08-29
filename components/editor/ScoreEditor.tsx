@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { SeedRef } from "@/lib/tournament";
+import { HOOKS_FOR_4K, type SeedRef } from "@/lib/tournament";
 import {
   field,
   IDLE_SAVE_STATE,
@@ -30,6 +30,11 @@ const VIDEO_CLASS =
   "w-full min-w-0 rounded-md border border-black/15 bg-white px-2 py-1 font-mono text-xs dark:border-white/20 dark:bg-zinc-800";
 const SELECT_CLASS =
   "w-full min-w-0 rounded-md border border-black/15 bg-white px-2 py-1 text-sm dark:border-white/20 dark:bg-zinc-800";
+/** Heading over — or beside — a pair of knockout number boxes. */
+const COUNT_LABEL_CLASS =
+  "text-[10px] font-semibold uppercase tracking-wide text-zinc-400";
+/** Gutter the "Hooks"/"Gens" labels sit in, matched by the header's spacer. */
+const SIDE_LABEL_WIDTH = "w-9 shrink-0";
 
 /** Where a match's score lives while it's being edited, as typed. */
 interface ScoreEntry {
@@ -211,6 +216,34 @@ function RoundList({
 // Knockout
 // ---------------------------------------------------------------------------
 
+/**
+ * One whole-number box of a knockout score: hooks, or the generators left that
+ * settle a game the hooks left level. Uncontrolled, like every knockout field —
+ * what's on disk is what's shown until the next save.
+ */
+function CountBox({
+  name,
+  value,
+  label,
+}: {
+  name: string;
+  value?: number;
+  label: string;
+}) {
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      min={0}
+      step={1}
+      name={name}
+      defaultValue={value ?? ""}
+      aria-label={label}
+      className={HOOKS_CLASS}
+    />
+  );
+}
+
 function SeedSelect({
   value,
   options,
@@ -242,6 +275,10 @@ function SeedSelect({
  * One game's score and video link. A one-off match has a single one of these
  * sitting inline with the two slots; a series stacks them under the pairing,
  * labelled by game number.
+ *
+ * Two rows of boxes: the hooks that decide the game, and the generators left
+ * that settle it when the hooks come out level. The columns are the two sides,
+ * named in the header above the list.
  */
 function KnockoutGameRow({
   match,
@@ -261,27 +298,37 @@ function KnockoutGameRow({
         <span className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
           Game {game.number}
         </span>
-        <span className="flex gap-1">
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={1}
-            name={field.knockoutHooks(match.round, match.match, game.number, "a")}
-            defaultValue={game.aHooks ?? ""}
-            aria-label={`${name} — hooks for the first side`}
-            className={HOOKS_CLASS}
-          />
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={1}
-            name={field.knockoutHooks(match.round, match.match, game.number, "b")}
-            defaultValue={game.bHooks ?? ""}
-            aria-label={`${name} — hooks for the second side`}
-            className={HOOKS_CLASS}
-          />
+        <span className="flex flex-col gap-1">
+          <span className="flex items-center gap-1">
+            <span className={`${COUNT_LABEL_CLASS} ${SIDE_LABEL_WIDTH} text-right`}>
+              Hooks
+            </span>
+            <CountBox
+              name={field.knockoutHooks(match.round, match.match, game.number, "a")}
+              value={game.aHooks}
+              label={`${name} — hooks for the first side`}
+            />
+            <CountBox
+              name={field.knockoutHooks(match.round, match.match, game.number, "b")}
+              value={game.bHooks}
+              label={`${name} — hooks for the second side`}
+            />
+          </span>
+          <span className="flex items-center gap-1">
+            <span className={`${COUNT_LABEL_CLASS} ${SIDE_LABEL_WIDTH} text-right`}>
+              Gens
+            </span>
+            <CountBox
+              name={field.knockoutGens(match.round, match.match, game.number, "a")}
+              value={game.aGens}
+              label={`${name} — generators left for the first side`}
+            />
+            <CountBox
+              name={field.knockoutGens(match.round, match.match, game.number, "b")}
+              value={game.bGens}
+              label={`${name} — generators left for the second side`}
+            />
+          </span>
         </span>
       </div>
       <input
@@ -313,6 +360,11 @@ function KnockoutMatchCard({
   // A one-off keeps its score inline with the slots; a series can't, since
   // every game needs its own pair of boxes.
   const single = series ? undefined : match.games[0];
+  // A game that came out level at a 4k each is settled on the generators left,
+  // so until they're entered the bracket has nobody to advance out of it. Read
+  // off the last save rather than what's being typed — the knockout boxes are
+  // uncontrolled, so this refreshes when the file does.
+  const needsGens = match.games.some((g) => g.tiebreak && g.aGens === undefined);
 
   const slot = (side: 0 | 1) =>
     seed ? (
@@ -343,35 +395,50 @@ function KnockoutMatchCard({
         className={
           series
             ? "grid grid-cols-1 gap-2"
-            : "grid grid-cols-[1fr_auto] items-center gap-2"
+            : "grid grid-cols-[1fr_auto_auto] items-center gap-2"
         }
       >
+        {/* Hooks decide the match; the generators left only come into it when
+            the hooks are level, but they're entered either way — which games
+            end up level isn't known until they're played. */}
+        {single && (
+          <>
+            <span />
+            <span className={`${COUNT_LABEL_CLASS} w-14 text-center`}>Hooks</span>
+            <span className={`${COUNT_LABEL_CLASS} w-14 text-center`}>Gens</span>
+          </>
+        )}
+
         {slot(0)}
         {single && (
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={1}
-            name={field.knockoutHooks(match.round, match.match, single.number, "a")}
-            defaultValue={single.aHooks ?? ""}
-            aria-label={`${label} — hooks for the first side`}
-            className={HOOKS_CLASS}
-          />
+          <>
+            <CountBox
+              name={field.knockoutHooks(match.round, match.match, single.number, "a")}
+              value={single.aHooks}
+              label={`${label} — hooks for the first side`}
+            />
+            <CountBox
+              name={field.knockoutGens(match.round, match.match, single.number, "a")}
+              value={single.aGens}
+              label={`${label} — generators left for the first side`}
+            />
+          </>
         )}
 
         {slot(1)}
         {single && (
-          <input
-            type="number"
-            inputMode="numeric"
-            min={0}
-            step={1}
-            name={field.knockoutHooks(match.round, match.match, single.number, "b")}
-            defaultValue={single.bHooks ?? ""}
-            aria-label={`${label} — hooks for the second side`}
-            className={HOOKS_CLASS}
-          />
+          <>
+            <CountBox
+              name={field.knockoutHooks(match.round, match.match, single.number, "b")}
+              value={single.bHooks}
+              label={`${label} — hooks for the second side`}
+            />
+            <CountBox
+              name={field.knockoutGens(match.round, match.match, single.number, "b")}
+              value={single.bGens}
+              label={`${label} — generators left for the second side`}
+            />
+          </>
         )}
       </div>
 
@@ -397,6 +464,7 @@ function KnockoutMatchCard({
           {/* Which box is whose: the names sit above the columns, since a
               series stacks them rather than putting each beside its own box. */}
           <div className="mt-2 flex items-center justify-end gap-1 pr-2">
+            <span className={SIDE_LABEL_WIDTH} />
             {[match.aLabel, match.bLabel].map((name, i) => (
               <span
                 key={i}
@@ -420,12 +488,21 @@ function KnockoutMatchCard({
         </>
       )}
 
-      {match.drawn && (
+      {/* The actionable one wins: a level game with no generators against it is
+          something to go and enter, not a settled outcome to report. */}
+      {needsGens ? (
         <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
-          {series
-            ? `All ${match.bestOf} games played and still level — nobody advances from this one.`
-            : "Level on hooks — nobody advances from this one."}
+          {series ? "A game finished" : "Finished"} level at a 4k each — enter
+          the generators left to settle it.
         </p>
+      ) : (
+        match.drawn && (
+          <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+            {series
+              ? `All ${match.bestOf} games played and still level — this one gets replayed.`
+              : "Level, with nothing to separate them — this one gets replayed."}
+          </p>
+        )
       )}
     </div>
   );
@@ -462,7 +539,11 @@ function KnockoutSection({
         Pick which qualifying position fills each first-round slot; every later
         round fills itself from the winners as you enter hooks. Slot names update
         when you save. A round played as a series takes a score and a link per
-        game — leave the games that haven&apos;t been played empty.
+        game — leave the games that haven&apos;t been played empty. Hooks decide
+        a game; level at a 4k each — {HOOKS_FOR_4K} hooks apiece — and whoever
+        left more generators standing takes it. Any other tie is a replay, so
+        the gens only count on a level 4k; fill them in as you go, since how a
+        game ends up isn&apos;t known until it&apos;s played.
       </p>
       <div className="overflow-x-auto pb-2">
         <div className="flex min-w-max gap-5">

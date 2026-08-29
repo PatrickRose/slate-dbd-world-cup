@@ -85,8 +85,10 @@ itself holds no year and no title: the heading is generated as
         "round": 3,
         "match": 1,
         "game": 2,      // only for a round listed in "bestOf"
-        "aHooks": 9,
-        "bHooks": 11,
+        "aHooks": 12,
+        "bHooks": 12,
+        "aGens": 3,     // generators left — the knockout tie-break, only read
+        "bGens": 1,     // for a game level at a 4k each. Optional.
         "video": "https://youtu.be/VIDEO_ID?t=1234"
       }
     ]
@@ -98,7 +100,9 @@ itself holds no year and no title: the heading is generated as
 
 Computed automatically from `results`:
 
-- More hooks wins the match → **3 points**. A tie → **1 point each**.
+- More hooks wins the match → **3 points**. A tie → **1 point each**. The group
+  stage settles a level match as a draw and stops there — the generators-left
+  tie-break, and the replay behind it, are knockout rules, not group ones.
 - Standings sort by points, then total hooks, then name.
 - **Through / eliminated** colouring is worked out mathematically: a killer turns
   green once they've clinched a qualifying place, and red once it's impossible
@@ -145,8 +149,19 @@ Everything else follows from the results:
 - Each later round is half the size of the one before, filled by the winners
   under it. Round names come from how many are left: Round of 16, Quarter-finals,
   Semi-finals, Final.
-- A match level on hooks leaves the slot above it empty and says so, rather than
-  guessing who goes through. Replay it or nudge the hooks to settle it.
+- **More hooks wins. Level at a 4k each, the tie-break is the generators left
+  standing** — `aGens` / `bGens` — and whoever left more goes through. A 4k is
+  12 hooks: four survivors, three hook states each, and the most a killer can
+  score. It's the one level score the hooks can't separate, since neither killer
+  left anything on the table.
+  Hooks are all the data files record, so that's what "a 4k" means here — a 4k
+  that came by mori or bleed-out scores fewer than 12 and doesn't count as one.
+- **Any other tie is replayed.** A match level *below* a 4k never reads the
+  generators at all, and neither does one level at a 4k with the generators
+  level too, or with none recorded. All of them leave the slot above empty and
+  say so, rather than guessing who goes through.
+- The bracket only shows the generators where they settled something —
+  everywhere else they'd just be noise, so they're kept out of the way.
 
 Every position can only be seeded once, so the editor won't save a bracket with
 the same qualifier in two slots — swap the pair over instead.
@@ -168,14 +183,17 @@ Then each game gets its own entry in `scores`, numbered with `game`:
 ```
 
 - **More hooks wins a game; the first to win half the games plus one wins the
-  match** — three of five. Hooks decide each game and nothing else: a 3–0 sweep
+  match** — three of five. Games decide the match and nothing else: a 3–0 sweep
   beats a 3–2 win by the same amount, however the hooks fell.
 - **Games are played in order, and the series stops when it's won.** Anything
   entered after that is a dead rubber and doesn't count towards the score. A gap
   stops the count too, so a game recorded out of order won't skew the standings.
-- **A game level on hooks goes to nobody.** If every game is played and no one
-  has reached the target — 2–2 with one drawn, say — the match reads as played
-  out with nobody through, exactly like a level one-off match.
+- **A game level at a 4k each is settled on the generators left**, the same as a
+  one-off, and the chip for that game shows them alongside the hooks. Level on
+  the generators too, level with none recorded, or level below a 4k, and the
+  game goes to nobody: if every game is played and no one has reached the
+  target — 2–2 with one drawn, say — the match reads as played out with nobody
+  through.
 - **Each game carries its own `video`**, so spoiler mode reveals a series game
   by game: watch game 1 and the bracket says 1–0 with the rest held back. Games
   released on one stream still tick off together, the same as group matches do.
@@ -241,6 +259,11 @@ place, so review it with `git diff` and commit it like any other change.
   rounds show who's coming through and just take the score. Slot names refresh
   when you save. A round played as a series gets a row of boxes per game instead
   of one, labelled with the two killers so it's clear which column is whose.
+- Every knockout game takes a **gens** count per side as well as its hooks — the
+  tie-break. Only a game level at 12 hooks each reads them, but you won't know
+  which those are until they're played, so enter them as you go. A level 4k with
+  the gens boxes empty says so on its card, since nobody can advance out of it
+  until they're filled in.
 - A video link needs a score alongside it, and both hook boxes must be filled or
   both empty. The editor refuses to save and lists what to fix rather than
   writing a half-entered match.
